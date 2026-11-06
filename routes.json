@@ -1,0 +1,13 @@
+{
+  "routes": [
+    {
+      "id": "github-hosted-4vcpu",
+      "provider": "github",
+      "runsOn": "ubuntu-24.04",
+      "vcpu": 4,
+      "memoryGb": 16,
+      "image": "ubuntu-24.04",
+      "enabled": true
+    }
+  ]
+}

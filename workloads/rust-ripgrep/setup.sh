@@ -9,6 +9,9 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/../../bench/lib.sh"
 
 RUST_TOOLCHAIN="1.99.1"
+RUSTUP_VERSION="1.29.3"
+RUSTUP_SHA256_X64="b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55"
+RUSTUP_SHA256_ARM64="9f608c142e0e38a78957d0661ba1dfaf0b6fb37184cfaa4b9a0aa57af6184282"
 RIPGREP_REPO="https://github.com/BurntSushi/ripgrep.git"
 RIPGREP_TAG="15.2.0"
 RIPGREP_COMMIT="e89fff89ac9af12e8d4ce9d5fd07beb408ca730f"
@@ -26,8 +29,26 @@ fi
 
 export RUSTUP_HOME="$dir/rustup"
 export CARGO_HOME="$dir/cargo"
-curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs -o "$dir/rustup-init.sh"
-sh "$dir/rustup-init.sh" -y --no-modify-path --profile minimal --default-toolchain "$RUST_TOOLCHAIN"
+case "$(uname -m)" in
+  x86_64)
+    rustup_arch="x86_64"
+    rustup_sha="$RUSTUP_SHA256_X64"
+    ;;
+  aarch64 | arm64)
+    rustup_arch="aarch64"
+    rustup_sha="$RUSTUP_SHA256_ARM64"
+    ;;
+  *)
+    echo "unsupported architecture: $(uname -m)" >&2
+    exit 1
+    ;;
+esac
+curl --proto '=https' --tlsv1.2 -fsSL \
+  "https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/${rustup_arch}-unknown-linux-gnu/rustup-init" \
+  -o "$dir/rustup-init"
+echo "${rustup_sha}  $dir/rustup-init" | sha256sum -c - >/dev/null
+chmod +x "$dir/rustup-init"
+"$dir/rustup-init" -y --no-modify-path --profile minimal --default-toolchain "$RUST_TOOLCHAIN"
 
 # work.sh sources this file to find the toolchain.
 cat >"$dir/rust-env.sh" <<ENVEOF

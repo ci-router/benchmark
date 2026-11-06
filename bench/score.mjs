@@ -70,6 +70,34 @@ function startOf(row) {
   return Number.isNaN(t) ? null : new Date(t);
 }
 
+/** The CPU model of a row's fingerprint, or null when it is missing (rows from 0.1.0 may lack it). */
+function cpuModelOf(row) {
+  const model = row.fingerprint?.cpuModel;
+  return typeof model === 'string' && model.trim() !== '' ? model : null;
+}
+
+/**
+ * Work time per CPU model, from finished attempts. A row without a model is
+ * grouped under `cpuModel: null`; it is never dropped and never read as 0.
+ * Models sort by name, the unknown group last.
+ */
+function byCpu(successes) {
+  const groups = new Map();
+  for (const r of successes) {
+    if (typeof r.workSeconds !== 'number') continue;
+    const model = cpuModelOf(r);
+    if (!groups.has(model)) groups.set(model, []);
+    groups.get(model).push(r.workSeconds);
+  }
+  return [...groups.entries()]
+    .map(([cpuModel, samples]) => {
+      const { n, p50, p90, mean, cv } = summarize(samples);
+      return { cpuModel, n, p50, p90, mean, cv };
+    })
+    .filter((g) => g.n > 0)
+    .sort((a, b) => (a.cpuModel === null) - (b.cpuModel === null) || (a.cpuModel ?? '').localeCompare(b.cpuModel ?? ''));
+}
+
 function buildCell(rows) {
   const attempts = rows.filter((r) => ATTEMPT_CONCLUSIONS.has(r.conclusion));
   const successes = attempts.filter((r) => r.conclusion === 'success');
@@ -88,6 +116,7 @@ function buildCell(rows) {
     days: days.size,
     timeWindows: windows.size,
     work: summarize(successes.map((r) => r.workSeconds).filter((v) => typeof v === 'number')),
+    byCpu: byCpu(successes),
     setup: summarize(successes.map((r) => r.setupSeconds).filter((v) => typeof v === 'number')),
     cost: summarize(costs),
   };
@@ -221,10 +250,21 @@ export function readJsonl(dir) {
   return rows;
 }
 
+function readSuite(root, suite) {
+  if (!/^\d+\.\d+\.\d+$/.test(suite)) throw new Error(`not a suite version: ${suite}`);
+  try {
+    return JSON.parse(readFileSync(join(root, 'suites', `${suite}.json`), 'utf8'));
+  } catch {
+    throw new Error(`unknown suite ${suite}: no suites/${suite}.json`);
+  }
+}
+
 function main() {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-  const suiteJson = JSON.parse(readFileSync(join(root, 'suite.json'), 'utf8'));
-  const suite = args('suite')[0] ?? suiteJson.suite;
+  const current = JSON.parse(readFileSync(join(root, 'suite.json'), 'utf8'));
+  const suite = args('suite')[0] ?? current.suite;
+  // An earlier suite is scored with its own workload list, kept in suites/<version>.json.
+  const suiteJson = suite === current.suite ? current : readSuite(root, suite);
   const resultsDir = join(args('results')[0] ?? join(root, 'results'), suite);
   const routes = JSON.parse(readFileSync(join(root, 'routes.json'), 'utf8')).routes.map((r) => ({ id: r.id, vcpu: r.vcpu }));
   const timeBaselines = {};

@@ -297,3 +297,108 @@ test('cancelled and skipped jobs are not attempts', () => {
   assert.ok(cell.attempts < 20);
   assert.equal(cell.attempts, cell.finished);
 });
+
+// ---- byCpu
+
+const withCpu = (rs, models) =>
+  rs.map((r, i) => {
+    const m = models[i % models.length];
+    return m === undefined ? r : { ...r, fingerprint: { cpuModel: m } };
+  });
+const cellOf = (data, route = 'base4', workload = 'w1') => find(score(data, opts()), route).cells[workload];
+
+test('byCpu: mixed models are grouped, each with its own stats', () => {
+  const fast = rows('base4', 'w1', { n: 10, work: 100 });
+  const slow = rows('base4', 'w1', { n: 10, work: 200 });
+  const data = [
+    ...fast.map((r) => ({ ...r, fingerprint: { cpuModel: 'EPYC 9R14' } })),
+    ...slow.map((r) => ({ ...r, fingerprint: { cpuModel: 'Xeon 8370C' } })),
+  ];
+  const cell = cellOf(data);
+  assert.deepEqual(
+    cell.byCpu.map((g) => [g.cpuModel, g.n, g.p50, g.p90, g.mean, g.cv]),
+    [
+      ['EPYC 9R14', 10, 100, 100, 100, 0],
+      ['Xeon 8370C', 10, 200, 200, 200, 0],
+    ],
+  );
+  // the overall figures still cover both models: the spread there is partly hardware mix
+  assert.equal(cell.work.n, 20);
+  close(cell.work.mean, 150);
+  assert.ok(cell.work.cv > 0.3);
+});
+
+test('byCpu: a missing model is grouped as null, not dropped and not 0', () => {
+  const base = rows('base4', 'w1', { n: 6, work: 100 });
+  const data = [
+    { ...base[0], fingerprint: { cpuModel: 'EPYC 9R14' } },
+    { ...base[1], fingerprint: { cpuModel: 'EPYC 9R14' } },
+    { ...base[2], fingerprint: null },
+    { ...base[3], fingerprint: { cpuModel: null } },
+    { ...base[4], fingerprint: { cpuModel: '  ' } },
+    base[5], // 0.1.0 style: no fingerprint field at all
+  ];
+  const cell = cellOf(data);
+  assert.equal(cell.byCpu.length, 2);
+  assert.deepEqual(cell.byCpu.map((g) => g.cpuModel), ['EPYC 9R14', null]); // unknown sorts last
+  assert.equal(cell.byCpu[0].n, 2);
+  assert.equal(cell.byCpu[1].n, 4);
+  assert.equal(cell.byCpu[1].p50, 100);
+  assert.equal(cell.byCpu.reduce((a, g) => a + g.n, 0), cell.work.n);
+});
+
+test('byCpu: one model gives one group equal to the overall figures', () => {
+  const data = withCpu(rows('base4', 'w1', { n: 8, work: 100 }), ['EPYC 9R14']).map((r, i) => ({ ...r, workSeconds: 100 + i }));
+  const cell = cellOf(data);
+  assert.equal(cell.byCpu.length, 1);
+  const [g] = cell.byCpu;
+  assert.equal(g.cpuModel, 'EPYC 9R14');
+  assert.equal(g.n, cell.work.n);
+  assert.equal(g.p50, cell.work.p50);
+  assert.equal(g.p90, cell.work.p90);
+  assert.equal(g.mean, cell.work.mean);
+  assert.equal(g.cv, cell.work.cv);
+});
+
+test('byCpu: only finished attempts count, a cell with none gets an empty list', () => {
+  const data = rows('base4', 'w1', { n: 5, fail: 5 }).map((r) => ({ ...r, fingerprint: { cpuModel: 'EPYC 9R14' } }));
+  assert.deepEqual(cellOf(data).byCpu, []);
+  assert.deepEqual(cellOf([], 'base4', 'w2').byCpu, []);
+});
+
+test('byCpu does not change Speed, Value, Score or the ranking', () => {
+  const build = (decorate) => [
+    ...rows('base4', 'w1', { work: 100, cost: 0.1 }),
+    ...rows('base4', 'w2', { work: 400, cost: 0.4 }),
+    ...rows('base2', 'w1', { work: 200, cost: 0.1 }),
+    ...rows('base2', 'w2', { work: 800, cost: 0.4 }),
+    ...rows('fast4', 'w1', { work: 50, cost: 0.05 }),
+    ...rows('fast4', 'w2', { work: 200, cost: 0.2 }),
+  ].map(decorate);
+  const strip = (res) => JSON.parse(JSON.stringify(res, (k, v) => (k === 'byCpu' ? undefined : v)));
+  const plain = score(build((r) => r), opts());
+  const tagged = score(build((r, i) => ({ ...r, fingerprint: { cpuModel: i % 3 ? 'A' : 'B' } })), opts());
+  assert.deepEqual(strip(tagged), strip(plain));
+});
+
+test('the CLI scores an earlier suite with that suite\'s own workloads', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { execFileSync } = await import('node:child_process');
+  const dir = mkdtempSync(join(tmpdir(), 'score-'));
+  try {
+    mkdirSync(join(dir, '0.1.0'));
+    const row = { suite: '0.1.0', route: 'github-hosted-4vcpu', workload: 'rust-ripgrep', rep: 1, conclusion: 'success', workSeconds: 20, setupSeconds: 5, jobStartedAt: '2026-02-01T01:00:00.000Z' };
+    writeFileSync(join(dir, '0.1.0', 'a.jsonl'), `${JSON.stringify(row)}\n`);
+    const script = new URL('./score.mjs', import.meta.url).pathname;
+    const out = JSON.parse(execFileSync(process.execPath, [script, '--results', dir, '--suite', '0.1.0'], { encoding: 'utf8' }));
+    assert.deepEqual(out.workloads, ['rust-ripgrep', 'node-typescript']);
+    const cell = out.routes.find((r) => r.route === 'github-hosted-4vcpu').cells['rust-ripgrep'];
+    assert.equal(cell.work.n, 1);
+    assert.deepEqual(cell.byCpu, [{ cpuModel: null, n: 1, p50: 20, p90: 20, mean: 20, cv: null }]);
+    assert.throws(() => execFileSync(process.execPath, [script, '--results', dir, '--suite', '9.9.9'], { stdio: 'pipe' }));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

@@ -33,6 +33,7 @@ The one planned exception to "every result has a public run" is the private
 
 | Path | What it is |
 | --- | --- |
+| `LICENSE`, `LICENSE-RESULTS` | Apache-2.0 for the code, CC-BY-4.0 for results and raw data |
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `routes.json` | The routes under test (one enabled in stage 1) |
@@ -77,7 +78,8 @@ the default branch, so a pull request from a fork cannot start paid compute.
 
 ## Licence
 
-No licence has been chosen yet. Until one is added, the usual default applies:
-all rights are reserved, and you may view the code and fork it on GitHub under
-GitHub's terms, but you have no other permission to copy or reuse it. A licence
-will be added in a later change.
+- The code in this repository (scripts, workflows, workload definitions and
+  tests) is licensed under the [Apache License 2.0](LICENSE).
+- The results and the raw data on the `results` branch are licensed under
+  [Creative Commons Attribution 4.0 International](LICENSE-RESULTS) (CC-BY-4.0).
+  Attribute them to "ci-router benchmark".

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildMatrix, parseRepeats } from './plan.mjs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildMatrix, parseRepeats, readRoutes } from './plan.mjs';
 
 test('parseRepeats accepts 1 to 10 only', () => {
   assert.equal(parseRepeats('1'), 1);
@@ -19,4 +21,10 @@ test('buildMatrix uses enabled routes only, every workload and every repeat', ()
   assert.equal(m.include.length, 4);
   assert.ok(m.include.every((j) => j.route.id === 'a'));
   assert.deepEqual(m.include.map((j) => `${j.workload}${j.rep}`), ['w11', 'w12', 'w21', 'w22']);
+});
+
+test('readRoutes tolerates the archiveLogs field', () => {
+  const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
+  assert.ok(routes.length >= 1);
+  assert.ok(routes.every((r) => !('archiveLogs' in r)), 'the matrix does not carry archive settings');
 });

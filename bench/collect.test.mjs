@@ -110,6 +110,17 @@ test('buildRows makes a row from route, workload and rep in the job name', () =>
   assert.equal(r.workSeconds, 210);
   assert.equal(r.fingerprint, null);
   assert.equal(r.costUsd, null);
+  assert.equal(r.headSha, null);
+  assert.equal(r.jobId, null);
+});
+
+test('buildRows adds headSha and jobId only when well formed', () => {
+  const [ok] = buildRows([job({ id: 987, head_sha: 'ab'.repeat(20) })], ctx(), () => null);
+  assert.equal(ok.headSha, 'ab'.repeat(20));
+  assert.equal(ok.jobId, 987);
+  const [bad] = buildRows([job({ id: '987/../x', head_sha: 'not a sha' })], ctx(), () => null);
+  assert.equal(bad.headSha, null);
+  assert.equal(bad.jobId, null);
 });
 
 test('buildRows ignores plan and collect, and skips unknown routes, workloads and bad names', () => {

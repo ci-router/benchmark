@@ -38,7 +38,8 @@ The one planned exception to "every result has a public run" is the private
 | `routes.json` | The routes under test (one enabled in stage 1) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
-| `.github/workflows/benchmark.yml` | The only workflow, started by hand |
+| `.github/workflows/benchmark.yml` | The benchmark, started by hand |
+| `.github/workflows/archive.yml` | Saves the raw data of an earlier run, started by hand |
 
 ## Reproduce it by forking
 
@@ -51,8 +52,10 @@ The one planned exception to "every result has a public run" is the private
 4. Each job is named `run <route> <workload> <repeat>`. The `setup` and `work`
    steps are timed by GitHub, and the log shows exactly what ran.
 5. When the run is on the default branch, the `collect` job appends one row per
-   job to a `results` branch in your fork, under `results/<suite>/`. It never
-   pushes to the default branch.
+   job to a `results` branch in your fork, under `results/<suite>/`, and saves
+   the raw jobs-API response and some logs under `raw/` (see
+   [What is saved](METHODOLOGY.md#what-is-saved)). It never pushes to the
+   default branch.
 6. Score the rows with `node bench/score.mjs --results <dir> --time-baseline 4=github-hosted-4vcpu`.
 
 A private fork needs `contents: read` on the jobs that check out the code. The

@@ -19,6 +19,7 @@ export const MAX_REP = 10;
 export const MAX_FINGERPRINT_BYTES = 4096;
 const CONCLUSIONS = new Set(['success', 'failure', 'cancelled', 'skipped', 'timed_out', 'neutral', 'action_required', 'stale']);
 const TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?Z$/;
+const SHA_RE = /^[0-9a-f]{40}$/;
 const PRINTABLE_RE = /^[\x20-\x7e]+$/;
 
 /** Parse `run <routeId> <workload> <rep>`; null for any other name. */
@@ -173,15 +174,21 @@ export function buildRows(jobs, ctx, readFingerprint = readFingerprintFile) {
       workSeconds: stepSeconds(job.steps, 'work'),
       fingerprint,
       costUsd: null,
+      headSha: typeof job.head_sha === 'string' && SHA_RE.test(job.head_sha) ? job.head_sha : null,
+      jobId: Number.isSafeInteger(job.id) && job.id > 0 ? job.id : null,
     });
   }
   rows.sort((a, b) => a.route.localeCompare(b.route) || a.workload.localeCompare(b.workload) || a.rep - b.rep);
   return rows;
 }
 
-/** GET every page of the attempt's jobs. `fetchFn` is injectable for tests. */
-export async function fetchJobs({ apiUrl, token, repo, runId, attempt }, fetchFn = fetch) {
+/**
+ * GET every page of the attempt's jobs. Returns { total_count, jobs } with the
+ * jobs exactly as the API sent them. `fetchFn` is injectable for tests.
+ */
+export async function fetchJobsResponse({ apiUrl, token, repo, runId, attempt }, fetchFn = fetch) {
   const jobs = [];
+  let totalCount = null;
   for (let page = 1; page <= 30; page++) {
     const url = `${apiUrl}/repos/${repo}/actions/runs/${runId}/attempts/${attempt}/jobs?per_page=100&page=${page}`;
     const res = await fetchFn(url, {
@@ -194,11 +201,17 @@ export async function fetchJobs({ apiUrl, token, repo, runId, attempt }, fetchFn
     });
     if (!res.ok) throw new Error(`jobs API answered ${res.status}`);
     const body = await res.json();
+    if (page === 1 && Number.isInteger(body?.total_count)) totalCount = body.total_count;
     const batch = Array.isArray(body?.jobs) ? body.jobs : [];
     jobs.push(...batch);
-    if (batch.length < 100) return jobs;
+    if (batch.length < 100) return { total_count: totalCount ?? jobs.length, jobs };
   }
   throw new Error('jobs API: more than 30 pages');
+}
+
+/** GET every page of the attempt's jobs. `fetchFn` is injectable for tests. */
+export async function fetchJobs(ctx, fetchFn = fetch) {
+  return (await fetchJobsResponse(ctx, fetchFn)).jobs;
 }
 
 export function toJsonl(rows) {

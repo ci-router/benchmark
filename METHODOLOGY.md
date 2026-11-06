@@ -36,6 +36,40 @@ labels; this methodology and the scoring code; price snapshots; the raw rows and
 links to every run. Customer data of any kind is never part of the results, and
 customer runs never feed the public results.
 
+## What is saved
+
+GitHub deletes run logs after 90 days and artifacts after at most 90 days, and a
+row keeps only a few fields of what the jobs API returns. Everything below is
+also copied to the `results` branch.
+
+| What | Where | How long |
+| --- | --- | --- |
+| One row per job: timings, conclusion, fingerprint, `headSha`, `jobId` | `results/<suite>/<runId>-<attempt>.jsonl` | Permanent |
+| The complete jobs-API response for the run attempt, every job and field | `raw/<runId>-<attempt>/jobs.json` | Permanent |
+| The log of each job on a route marked `"archiveLogs": true` in `routes.json`, gzipped | `raw/<runId>-<attempt>/logs/<jobId>.log.gz` | Permanent |
+| For every `run ...` job, whether its log was saved or why not (`route-not-enabled`, `missing`, `too-large`, `secret-shaped`) | `raw/<runId>-<attempt>/manifest.json` | Permanent |
+| The fingerprint artifact | The Actions run | 90 days, then only the row remains |
+| The original run page and its logs | GitHub | 90 days for logs |
+
+- **The branch is permanent.** It is append-only: a file that is already on it
+  is never overwritten, and a reviewed correction is a new file, not an edit.
+  Treat anything saved there as public forever.
+- **Logs are archived only for routes marked `archiveLogs`.** The default is
+  not to archive, so a route added later gets no log saved until a reviewed
+  change to `routes.json` says its logs are safe. Only the GitHub-hosted
+  baseline is marked today.
+- **A log is never saved if it looks like it holds a credential** (a GitHub
+  token, or an HTTP basic authorization header), if it is over 50 MB, or if
+  GitHub no longer has it. The manifest says which.
+- **A run that was not archived at the time** can be saved later with the
+  `archive` workflow (manual, default branch only), while GitHub still has its
+  logs. It refuses any run that is not this repository's benchmark workflow on
+  `main`, started by a dispatch or a schedule.
+- **`jobs.json` is taken while the `collect` job is still running**, so that job
+  shows as in progress in it.
+- A change to the collector or the archive does not change what is measured, so
+  it does not start a new suite version.
+
 ## How a run works
 
 ```
@@ -44,7 +78,7 @@ workflow_dispatch (a schedule may be added later) on the default branch
   -> run: one job per route x workload x repeat, permissions: {}
        steps: fingerprint, setup, work, then upload the fingerprint
   -> collect: read GitHub's jobs API and the artifacts,
-       append rows to the `results` branch
+       append rows and raw copies to the `results` branch
 ```
 
 - **Timings come from GitHub's jobs API:** the job's `created_at`, `started_at`
@@ -188,7 +222,8 @@ cell whose coefficient of variation is above 15% is flagged as unstable.
   has no `pull_request` trigger, so a fork's pull request cannot add its own run.
 - The default branch is protected: no direct pushes, changes need a review.
 - Benchmark jobs have no secrets and `permissions: {}`. Only the GitHub-hosted
-  `collect` job can write, only on the default branch, and only to the `results`
+  `collect` job (and the manual `archive` workflow, which checks the run it is
+  given) can write, only on the default branch, and only to the `results`
   branch.
 - Actions are pinned by full commit SHA and change only in a reviewed suite
   version. No caches, no third-party actions.

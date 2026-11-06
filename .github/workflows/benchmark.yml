@@ -65,7 +65,7 @@ jobs:
           name: fingerprint-${{ github.run_attempt }}-${{ matrix.route.id }}-${{ matrix.workload }}-${{ matrix.rep }}
           path: fingerprint.json
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 90
 
   collect:
     name: collect
@@ -97,7 +97,17 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
         run: node bench/collect.mjs --artifacts artifacts --out out
+      # Raw copies of what GitHub deletes. A failure here warns and does not
+      # stop the rows from publishing.
+      - name: archive raw data
+        if: ${{ !cancelled() }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: node bench/archive.mjs --out out || echo "::warning::raw data was not archived; see the log above"
       - name: publish to the results branch
+        if: ${{ !cancelled() }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: bash bench/publish.sh out

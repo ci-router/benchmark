@@ -29,6 +29,9 @@ to want it to look good. Our answers to that:
 The one planned exception to "every result has a public run" is the private
 2-vCPU reference run, described in [METHODOLOGY.md](METHODOLOGY.md).
 
+This repository does not accept outside pull requests. To run the benchmark
+yourself, fork it (below).
+
 ## What is here
 
 | Path | What it is |
@@ -37,7 +40,7 @@ The one planned exception to "every result has a public run" is the private
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
-| `routes.json` | The routes under test (one enabled in stage 1) |
+| `routes.json` | The routes under test (one enabled in stage 1, one declared but disabled) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
 | `.github/workflows/benchmark.yml` | The benchmark, started by hand |

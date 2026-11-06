@@ -28,3 +28,13 @@ test('readRoutes tolerates the archiveLogs field', () => {
   assert.ok(routes.length >= 1);
   assert.ok(routes.every((r) => !('archiveLogs' in r)), 'the matrix does not carry archive settings');
 });
+
+test('the Ubicloud hosted runner is declared but disabled, and stays out of the matrix', () => {
+  const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
+  const ubicloud = routes.find((r) => r.id === 'ubicloud-hosted-4vcpu');
+  assert.ok(ubicloud);
+  assert.equal(ubicloud.runsOn, 'ubicloud-standard-4-ubuntu-2404');
+  assert.equal(ubicloud.enabled, false);
+  const m = buildMatrix(routes, ['w1'], 1);
+  assert.ok(m.include.every((j) => j.route.id !== 'ubicloud-hosted-4vcpu'));
+});

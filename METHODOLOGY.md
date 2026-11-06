@@ -106,6 +106,13 @@ A route is one way of getting a runner:
   and are not scored.
 - **Providers with their own GitHub Actions integration**, using their own
   labels. This measures what a customer gets from that provider directly. Not in
+  stage 1. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
+  declared in `routes.json` with `"enabled": false`: it is Ubicloud's own hosted
+  runner, and it stays out of the dispatch matrix until the Ubicloud GitHub App
+  is installed on the organization. Its `settings` object (`premiumCpu`,
+  `transparentCache`) is where those two Ubicloud options are recorded before
+  the route is enabled; `null` means not recorded. Both may change speed, so a
+  result must be read together with them.
 - **Router routes.** These come later. A router route can only be started from a
   manual or scheduled run on the default branch: the router refuses to place
   jobs from anything else, including a pull request from a fork. Not in stage 1.

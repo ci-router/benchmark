@@ -1,12 +1,12 @@
 {
-  "suite": "0.1.0",
+  "suite": "0.2.0",
   "workloads": {
-    "rust-ripgrep": {
+    "rust-analyzer": {
       "kind": "rust release build",
-      "repository": "https://github.com/BurntSushi/ripgrep",
-      "tag": "15.2.0",
-      "commit": "e89fff89ac9af12e8d4ce9d5fd07beb408ca730f",
-      "toolchain": "rust 1.99.1"
+      "repository": "https://github.com/rust-lang/rust-analyzer",
+      "tag": "2026-11-02",
+      "commit": "b98172d80f0da12bbde3d6733c274e17cb6417aa",
+      "toolchain": "rust 1.98.0"
     },
     "node-typescript": {
       "kind": "node build and tests",

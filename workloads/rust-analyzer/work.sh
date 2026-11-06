@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The compared part: a full release build of ripgrep, offline, from scratch.
+# The compared part: a full release build of rust-analyzer, offline, from scratch.
 set -eu
 set -o pipefail
 
@@ -10,7 +10,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 dir=$(bench_dir)
 # shellcheck disable=SC1091
 . "$dir/rust-env.sh"
-cd "$dir/ripgrep"
+cd "$dir/rust-analyzer"
 rm -rf target
-cargo build --release --locked --offline
-./target/release/rg --version
+cargo build --release --locked --offline --bin rust-analyzer
+./target/release/rust-analyzer --version

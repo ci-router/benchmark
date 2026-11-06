@@ -106,7 +106,6 @@ A route is one way of getting a runner:
   and are not scored.
 - **Providers with their own GitHub Actions integration**, using their own
   labels. This measures what a customer gets from that provider directly. Not in
-  stage 1.
 - **Router routes.** These come later. A router route can only be started from a
   manual or scheduled run on the default branch: the router refuses to place
   jobs from anything else, including a pull request from a fork. Not in stage 1.
@@ -119,14 +118,17 @@ exact versions.
 
 | Workload | Measures | Pin | Stage |
 | --- | --- | --- | --- |
-| `rust-ripgrep`: release build | all-core compile | ripgrep 15.2.0, commit `e89fff89ac9af12e8d4ce9d5fd07beb408ca730f`, Rust 1.99.1 | 1 |
+| `rust-analyzer`: release build | all-core compile | rust-analyzer tag `2026-11-02`, commit `b98172d80f0da12bbde3d6733c274e17cb6417aa`, Rust 1.98.0 | 1 |
 | `node-typescript`: build and tests | single-thread speed, disk, npm I/O | TypeScript v7.0.2, commit `1e4744d68260a7cb91b62b12edc3f6a2187faaf1`, Node 22.23.4 | 1 |
 | Go build and tests | parallel compile and test | to be chosen | later |
 | Browser tests | memory, browser dependencies, image contents | to be chosen | later |
 | Docker image build | Docker availability, disk I/O | to be chosen | later |
 
-- **ripgrep:** `cargo build --release --locked --offline` after
-  `cargo fetch --locked` in setup.
+- **rust-analyzer:** `cargo build --release --locked --offline --bin rust-analyzer`
+  after `cargo fetch --locked` in setup. It is pure Rust, needs only a C linker,
+  and compiles for minutes rather than seconds, so the 1-second step timings are
+  a small share of the measured time. Rust 1.98.0 is the `rust-version` the
+  pinned tag declares, pinned to that exact release.
 - **TypeScript:** the tag `v7.0.2` points to a commit whose tree is the
   JavaScript code base (its `package.json` says version 6.0.0), so it is a Node
   project. Setup runs `npm ci`. Work runs `hereby local` (build the compiler) and
@@ -161,6 +163,29 @@ Each published cell gives the sample count, p50, p90 and the coefficient of
 variation (standard deviation of the successful samples divided by their mean).
 Percentiles interpolate linearly between the closest ranks. p95 is published
 only from 40 samples, because at 20 it is just the second-worst run.
+
+**One route spans several CPU models.** A provider's pool of hosts is rarely
+uniform, and the same route label can land on different processors from one run
+to the next. The coefficient of variation of a cell is therefore partly hardware
+mix and not only run-to-run noise on one machine. To make this visible, each
+cell also carries `byCpu`: for every `fingerprint.cpuModel` seen among the
+finished attempts, the sample count, p50, p90, mean and coefficient of
+variation of the work time. A run whose fingerprint has no CPU model is grouped
+as `cpuModel: null`; it is never dropped and never read as 0. `byCpu` is
+published for reading only: `Speed`, `Value`, `Score`, the ranking rules and the
+unstable flag still use the whole cell, so the route is judged on what a
+customer would get, not on the best processor it sometimes has.
+
+## Suite versions
+
+The suite version is in `suite.json`, and every row records the version it was
+run under. Results are scored per version and never mixed.
+
+- **0.2.0** replaces the `rust-ripgrep` workload (a build of 18 to 29 seconds,
+  too short to measure with 1-second step timings) with `rust-analyzer`.
+- **0.1.0** rows under `results/0.1.0` keep their meaning: they were run with
+  `rust-ripgrep`, and `suites/0.1.0.json` keeps that suite's workload list so
+  that `node bench/score.mjs --suite 0.1.0` still scores them as before.
 
 ## Baselines
 

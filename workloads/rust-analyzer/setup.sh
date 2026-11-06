@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rust release build of ripgrep: install the pinned toolchain, fetch the exact
+# Rust release build of rust-analyzer: install the pinned toolchain, fetch the exact
 # commit and download the locked dependencies. Nothing here is timed as "work".
 set -eu
 set -o pipefail
@@ -8,13 +8,13 @@ here=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=../../bench/lib.sh
 . "$here/../../bench/lib.sh"
 
-RUST_TOOLCHAIN="1.99.1"
+RUST_TOOLCHAIN="1.98.0"
 RUSTUP_VERSION="1.29.3"
 RUSTUP_SHA256_X64="b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55"
 RUSTUP_SHA256_ARM64="9f608c142e0e38a78957d0661ba1dfaf0b6fb37184cfaa4b9a0aa57af6184282"
-RIPGREP_REPO="https://github.com/BurntSushi/ripgrep.git"
-RIPGREP_TAG="15.2.0"
-RIPGREP_COMMIT="e89fff89ac9af12e8d4ce9d5fd07beb408ca730f"
+RA_REPO="https://github.com/rust-lang/rust-analyzer.git"
+RA_TAG="2026-11-02"
+RA_COMMIT="b98172d80f0da12bbde3d6733c274e17cb6417aa"
 
 dir=$(bench_dir)
 mkdir -p "$dir"
@@ -57,16 +57,16 @@ export CARGO_HOME="$dir/cargo"
 export PATH="$dir/cargo/bin:\$PATH"
 ENVEOF
 
-src="$dir/ripgrep"
+src="$dir/rust-analyzer"
 rm -rf "$src"
 mkdir -p "$src"
 git -C "$src" init -q
-git -C "$src" remote add origin "$RIPGREP_REPO"
-git -C "$src" fetch -q --depth 1 origin "$RIPGREP_COMMIT"
+git -C "$src" remote add origin "$RA_REPO"
+git -C "$src" fetch -q --depth 1 origin "$RA_COMMIT"
 git -C "$src" checkout -q --detach FETCH_HEAD
 head=$(git -C "$src" rev-parse HEAD)
-if [ "$head" != "$RIPGREP_COMMIT" ]; then
-  echo "ripgrep checkout is $head, expected $RIPGREP_COMMIT (tag $RIPGREP_TAG)" >&2
+if [ "$head" != "$RA_COMMIT" ]; then
+  echo "rust-analyzer checkout is $head, expected $RA_COMMIT (tag $RA_TAG)" >&2
   exit 1
 fi
 
@@ -74,4 +74,4 @@ fi
 . "$dir/rust-env.sh"
 cd "$src"
 cargo fetch --locked
-echo "setup done: rustc $(rustc --version), ripgrep $RIPGREP_TAG at $head"
+echo "setup done: rustc $(rustc --version), rust-analyzer $RA_TAG at $head"

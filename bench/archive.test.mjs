@@ -56,7 +56,7 @@ const run = (gh, out, routes = ['github-hosted-4vcpu']) =>
   archiveRun({ ctx, archiveRoutes: new Set(routes), outDir: out, fetchFn: gh.fetchFn, sleep: noSleep });
 
 test('jobs.json keeps the complete response, every job and every field', async () => {
-  const jobs = [job(11, 'plan'), job(12, 'run github-hosted-4vcpu rust-ripgrep 1', { extra_field: { nested: [1, 2] } }), job(13, 'collect', { status: 'in_progress' })];
+  const jobs = [job(11, 'plan'), job(12, 'run github-hosted-4vcpu rust-analyzer 1', { extra_field: { nested: [1, 2] } }), job(13, 'collect', { status: 'in_progress' })];
   const out = tmp();
   await run(fakeGithub({ jobs, logs: { 12: text('log') } }), out);
   const saved = JSON.parse(readFileSync(join(rawDir(out), 'jobs.json'), 'utf8'));
@@ -64,7 +64,7 @@ test('jobs.json keeps the complete response, every job and every field', async (
 });
 
 test('a log of an enabled route is archived as deterministic gzip', async () => {
-  const jobs = [job(12, 'run github-hosted-4vcpu rust-ripgrep 1')];
+  const jobs = [job(12, 'run github-hosted-4vcpu rust-analyzer 1')];
   const out1 = tmp();
   const out2 = tmp();
   await run(fakeGithub({ jobs, logs: { 12: text('hello log\n') } }), out1);
@@ -79,7 +79,7 @@ test('a log of an enabled route is archived as deterministic gzip', async () => 
 });
 
 test('manifest reason: route-not-enabled, and no log is fetched', async () => {
-  const jobs = [job(12, 'run github-hosted-4vcpu rust-ripgrep 1'), job(13, 'run other-route rust-ripgrep 1'), job(14, 'run bad name')];
+  const jobs = [job(12, 'run github-hosted-4vcpu rust-analyzer 1'), job(13, 'run other-route rust-analyzer 1'), job(14, 'run bad name')];
   const out = tmp();
   const gh = fakeGithub({ jobs, logs: { 12: text('x'), 13: text('x'), 14: text('x') } });
   await run(gh, out, []); // nothing opted in
@@ -94,9 +94,9 @@ test('manifest reason: route-not-enabled, and no log is fetched', async () => {
 
 test('manifest reason: missing for an unfinished job and for a log that never appears', async () => {
   const jobs = [
-    job(12, 'run github-hosted-4vcpu rust-ripgrep 1'),
-    job(13, 'run github-hosted-4vcpu rust-ripgrep 2', { status: 'in_progress' }),
-    job(14, 'run github-hosted-4vcpu rust-ripgrep 3'),
+    job(12, 'run github-hosted-4vcpu rust-analyzer 1'),
+    job(13, 'run github-hosted-4vcpu rust-analyzer 2', { status: 'in_progress' }),
+    job(14, 'run github-hosted-4vcpu rust-analyzer 3'),
   ];
   const out = tmp();
   const gh = fakeGithub({ jobs, logs: { 12: () => new Response('', { status: 404 }), 14: () => new Response('', { status: 410 }) } });
@@ -107,7 +107,7 @@ test('manifest reason: missing for an unfinished job and for a log that never ap
 });
 
 test('manifest reason: too-large over 50 MB', async () => {
-  const jobs = [job(12, 'run github-hosted-4vcpu rust-ripgrep 1'), job(13, 'run github-hosted-4vcpu rust-ripgrep 2')];
+  const jobs = [job(12, 'run github-hosted-4vcpu rust-analyzer 1'), job(13, 'run github-hosted-4vcpu rust-analyzer 2')];
   const out = tmp();
   const big = Buffer.alloc(MAX_LOG_BYTES + 1, 0x61);
   const limit = Buffer.alloc(MAX_LOG_BYTES, 0x61);
@@ -126,7 +126,7 @@ test('manifest reason: secret-shaped, stored nowhere and never printed', async (
     'Authorization: Basic eDp0b2tlbg==\n',
     `a ghs_${'z'.repeat(20)}`,
   ];
-  const jobs = bodies.map((_, i) => job(20 + i, `run github-hosted-4vcpu rust-ripgrep ${i + 1}`));
+  const jobs = bodies.map((_, i) => job(20 + i, `run github-hosted-4vcpu rust-analyzer ${i + 1}`));
   const logs = Object.fromEntries(bodies.map((b, i) => [20 + i, text(b)]));
   const out = tmp();
   const warnings = [];
@@ -139,12 +139,12 @@ test('manifest reason: secret-shaped, stored nowhere and never printed', async (
 });
 
 test('looksSecret does not flag ordinary text', () => {
-  assert.equal(looksSecret('Compiling ripgrep v14.1.0\nghp_short\n'), false);
+  assert.equal(looksSecret('Compiling rust-analyzer v0.0.0\nghp_short\n'), false);
   assert.equal(looksSecret('ghp_ABCDEFGHIJKLMNOPQRSTUVWX'), true);
 });
 
 test('a 404 then success is archived', async () => {
-  const jobs = [job(12, 'run github-hosted-4vcpu rust-ripgrep 1')];
+  const jobs = [job(12, 'run github-hosted-4vcpu rust-analyzer 1')];
   const out = tmp();
   const sleeps = [];
   const gh = fakeGithub({ jobs, logs: { 12: (n) => (n < 3 ? new Response('', { status: 404 }) : new Response('late log')) } });
@@ -188,7 +188,7 @@ test('a job id that is not a positive integer never reaches a URL', async () => 
   assert.equal(calls.length, 0);
 
   const out = tmp();
-  const jobs = [job('12/../../x', 'run github-hosted-4vcpu rust-ripgrep 1'), job(null, 'run github-hosted-4vcpu rust-ripgrep 2')];
+  const jobs = [job('12/../../x', 'run github-hosted-4vcpu rust-analyzer 1'), job(null, 'run github-hosted-4vcpu rust-analyzer 2')];
   const gh = fakeGithub({ jobs });
   await run(gh, out);
   assert.deepEqual(manifestOf(out).jobs.map((j) => [j.jobId, j.reason]), [[null, 'missing'], [null, 'missing']]);
@@ -210,7 +210,7 @@ test('the run check refuses each bad condition and writes nothing', async () => 
   };
   for (const [what, extra] of Object.entries(bad)) {
     const out = tmp();
-    const gh = fakeGithub({ run: goodRun(extra), jobs: [job(12, 'run github-hosted-4vcpu rust-ripgrep 1')], logs: { 12: text('x') } });
+    const gh = fakeGithub({ run: goodRun(extra), jobs: [job(12, 'run github-hosted-4vcpu rust-analyzer 1')], logs: { 12: text('x') } });
     await assert.rejects(run(gh, out), /refusing to archive/, what);
     assert.ok(!existsSync(join(out, 'raw')), `${what}: nothing written`);
     assert.equal(gh.calls.length, 1, `${what}: nothing else was fetched`);

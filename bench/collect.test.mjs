@@ -21,7 +21,7 @@ const ctx = (extra = {}) => ({
   runId: 123,
   attempt: 1,
   routeIds: new Set(['github-hosted-4vcpu']),
-  workloadIds: new Set(['rust-ripgrep', 'node-typescript']),
+  workloadIds: new Set(['rust-analyzer', 'node-typescript']),
   artifactsDir: '/nonexistent',
   warn: () => {},
   ...extra,
@@ -30,7 +30,7 @@ const ctx = (extra = {}) => ({
 const step = (name, start, end, status = 'completed') => ({ name, status, conclusion: 'success', started_at: start, completed_at: end });
 
 const job = (extra = {}) => ({
-  name: 'run github-hosted-4vcpu rust-ripgrep 1',
+  name: 'run github-hosted-4vcpu rust-analyzer 1',
   status: 'completed',
   conclusion: 'success',
   created_at: '2026-01-01T10:00:00Z',
@@ -45,7 +45,7 @@ const job = (extra = {}) => ({
 });
 
 test('parseJobName accepts the exact form', () => {
-  assert.deepEqual(parseJobName('run github-hosted-4vcpu rust-ripgrep 3'), { routeId: 'github-hosted-4vcpu', workload: 'rust-ripgrep', rep: 3 });
+  assert.deepEqual(parseJobName('run github-hosted-4vcpu rust-analyzer 3'), { routeId: 'github-hosted-4vcpu', workload: 'rust-analyzer', rep: 3 });
   assert.deepEqual(parseJobName('run a b 10'), { routeId: 'a', workload: 'b', rep: 10 });
 });
 
@@ -99,7 +99,7 @@ test('buildRows makes a row from route, workload and rep in the job name', () =>
   const r = rows[0];
   assert.equal(r.suite, '0.1.0');
   assert.equal(r.route, 'github-hosted-4vcpu');
-  assert.equal(r.workload, 'rust-ripgrep');
+  assert.equal(r.workload, 'rust-analyzer');
   assert.equal(r.rep, 1);
   assert.equal(r.runId, 123);
   assert.equal(r.attempt, 1);
@@ -128,11 +128,11 @@ test('buildRows ignores plan and collect, and skips unknown routes, workloads an
   const jobs = [
     job({ name: 'plan' }),
     job({ name: 'collect' }),
-    job({ name: 'run evil-route rust-ripgrep 1' }),
+    job({ name: 'run evil-route rust-analyzer 1' }),
     job({ name: 'run github-hosted-4vcpu ../../etc 1' }),
     job({ name: 'run github-hosted-4vcpu not-a-workload 1' }),
-    job({ name: 'run github-hosted-4vcpu rust-ripgrep 1\n::set-output name=x::y' }),
-    job({ name: 'run github-hosted-4vcpu rust-ripgrep 2', status: 'in_progress' }),
+    job({ name: 'run github-hosted-4vcpu rust-analyzer 1\n::set-output name=x::y' }),
+    job({ name: 'run github-hosted-4vcpu rust-analyzer 2', status: 'in_progress' }),
     job({ name: 'run github-hosted-4vcpu node-typescript 1' }),
     null,
     'string',
@@ -167,7 +167,7 @@ test('buildRows builds the artifact path from validated parts only', () => {
     paths.push(p);
     return null;
   });
-  assert.deepEqual(paths, [join('art', 'fingerprint-2-github-hosted-4vcpu-rust-ripgrep-1', 'fingerprint.json')]);
+  assert.deepEqual(paths, [join('art', 'fingerprint-2-github-hosted-4vcpu-rust-analyzer-1', 'fingerprint.json')]);
 });
 
 test('sanitizeFingerprint keeps known fields with the right types', () => {
@@ -240,7 +240,7 @@ test('a hostile artifact cannot change route, workload or cost', () => {
   const rows = buildRows([job({ conclusion: 'failure' })], ctx(), () => sanitizeFingerprint(hostile));
   const r = rows[0];
   assert.equal(r.route, 'github-hosted-4vcpu');
-  assert.equal(r.workload, 'rust-ripgrep');
+  assert.equal(r.workload, 'rust-analyzer');
   assert.equal(r.rep, 1);
   assert.equal(r.costUsd, null);
   assert.equal(r.conclusion, 'failure');
@@ -248,7 +248,7 @@ test('a hostile artifact cannot change route, workload or cost', () => {
 });
 
 test('toJsonl writes one JSON object per line', () => {
-  const out = toJsonl(buildRows([job(), job({ name: 'run github-hosted-4vcpu rust-ripgrep 2' })], ctx(), () => null));
+  const out = toJsonl(buildRows([job(), job({ name: 'run github-hosted-4vcpu rust-analyzer 2' })], ctx(), () => null));
   const lines = out.trimEnd().split('\n');
   assert.equal(lines.length, 2);
   assert.equal(JSON.parse(lines[1]).rep, 2);

@@ -36,6 +36,7 @@ The one planned exception to "every result has a public run" is the private
 | `LICENSE`, `LICENSE-RESULTS` | Apache-2.0 for the code, CC-BY-4.0 for results and raw data |
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
+| `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
 | `routes.json` | The routes under test (one enabled in stage 1) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |

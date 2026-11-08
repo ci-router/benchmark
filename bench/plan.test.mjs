@@ -62,3 +62,15 @@ test('the Depot route is declared with its own label and 2 vCPU / 8 GB', () => {
   assert.equal(depot.memoryGb, 8);
   assert.deepEqual(selectRoutes(routes, 'depot-ubuntu-2vcpu').map((r) => r.id), ['depot-ubuntu-2vcpu']);
 });
+
+test('the Boat routes are declared with their own labels and sizes', () => {
+  const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
+  const four = routes.find((r) => r.id === 'boat-4vcpu');
+  const two = routes.find((r) => r.id === 'boat-2vcpu');
+  assert.ok(four && two);
+  assert.equal(four.runsOn, 'boat');
+  assert.equal(four.vcpu, 4);
+  assert.equal(two.runsOn, 'boat-small');
+  assert.equal(two.vcpu, 2);
+  assert.ok(!four.archiveLogs && !two.archiveLogs);
+});

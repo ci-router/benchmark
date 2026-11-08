@@ -72,10 +72,20 @@ test('scheduled budget refuses unknown, zero paid, nonfinite costs and unapprove
       dailyBudgetUsd: 5, maxJobCostUsd: { paid: cost },
     }), /maximum job cost/);
   }
-  for (const budget of [undefined, null, 0, -1, 6, Infinity, '5']) {
+  for (const budget of [undefined, null, -1, 6, Infinity, '5']) {
     assert.throws(() => assertScheduledBudget([], [], { dailyBudgetUsd: budget }), /dailyBudgetUsd/);
   }
   assert.equal(assertScheduledBudget([{ id: 'github-hosted-4vcpu' }], ['node'], {
     dailyBudgetUsd: 5, maxJobCostUsd: { 'github-hosted-4vcpu': 0 },
   }), 0);
+});
+
+
+test('external zero-dollar allocation permits the free baseline but no paid route', () => {
+  assert.equal(assertScheduledBudget([{ id: 'github-hosted-4vcpu' }], ['node'], {
+    dailyBudgetUsd: 0, maxJobCostUsd: { 'github-hosted-4vcpu': 0 },
+  }), 0);
+  assert.throws(() => assertScheduledBudget([{ id: 'paid' }], ['node'], {
+    dailyBudgetUsd: 0, maxJobCostUsd: { paid: 0.01 },
+  }), /exceeds/);
 });

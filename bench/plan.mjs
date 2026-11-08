@@ -64,8 +64,8 @@ export function scheduledRoutes(routes, config) {
 
 /** Conservative exposure for four scheduled passes; manual dispatch is separate. */
 export function assertScheduledBudget(routes, workloads, config) {
-  if (!Number.isFinite(config.dailyBudgetUsd) || config.dailyBudgetUsd <= 0 || config.dailyBudgetUsd > 5) {
-    throw new Error('schedule.json: dailyBudgetUsd must be positive and at most 5');
+  if (!Number.isFinite(config.dailyBudgetUsd) || config.dailyBudgetUsd < 0 || config.dailyBudgetUsd > 5) {
+    throw new Error('schedule.json: dailyBudgetUsd must be nonnegative and at most 5');
   }
   let perPass = 0;
   for (const route of routes) {

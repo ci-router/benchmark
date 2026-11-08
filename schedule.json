@@ -1,6 +1,10 @@
 {
-  "routes": ["github-hosted-4vcpu"],
+  "routes": [
+    "github-hosted-4vcpu"
+  ],
   "repeats": 1,
-  "dailyBudgetUsd": 5,
-  "maxJobCostUsd": { "github-hosted-4vcpu": 0 }
+  "dailyBudgetUsd": 0,
+  "maxJobCostUsd": {
+    "github-hosted-4vcpu": 0
+  }
 }

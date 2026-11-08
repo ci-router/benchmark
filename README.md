@@ -135,7 +135,10 @@ per workload. Initially it includes only the public GitHub baseline (two jobs pe
 pass, eight per day). Adding or enabling a route in `routes.json` does not enroll
 it. Paid routes require a reviewed enrollment after account access, publication
 terms, route qualification and a verified maximum billed cost per job are
-confirmed. The owner-approved scheduled budget is $5/day. Before planning, the
+confirmed. The owner-approved budget is $5/day TOTAL across internal and external
+programs. This external schedule reserves $0/day; the internal preparation reserves
+the remaining $5/day but cannot execute. Do not allocate $5 independently in both
+repositories. Before planning, the
 script checks the sum of each route's `maxJobCostUsd` times every workload times
 four daily passes; unknown costs, zero paid costs and totals over the budget
 fail closed. The current scheduled exposure is $0/day.

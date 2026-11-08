@@ -48,6 +48,7 @@ jobs:
         run: node bench/plan.mjs
 
   run:
+    if: ${{ github.event_name != 'schedule' || github.run_attempt == 1 }}
     name: run ${{ matrix.route.id }} ${{ matrix.workload }} ${{ matrix.rep }}
     needs: plan
     runs-on: ${{ matrix.route.runsOn }}
@@ -82,7 +83,7 @@ jobs:
   collect:
     name: collect
     needs: [plan, run]
-    if: ${{ always() && needs.plan.result == 'success' && github.ref == 'refs/heads/main' }}
+    if: ${{ always() && needs.plan.result == 'success' && github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || github.run_attempt == 1) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

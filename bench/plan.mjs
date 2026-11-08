@@ -48,6 +48,37 @@ export function readRoutes(path) {
   });
 }
 
+/** Scheduled sampling is explicit: enabling a route for dispatch does not enroll it. */
+export function scheduledRoutes(routes, config) {
+  if (!config || !Array.isArray(config.routes) || config.routes.length === 0 ||
+      config.repeats !== 1 || new Set(config.routes).size !== config.routes.length) {
+    throw new Error('schedule.json: unique route ids and exactly one repeat are required');
+  }
+  return config.routes.map((id) => {
+    if (typeof id !== 'string' || !ID_RE.test(id)) throw new Error('schedule.json: invalid route id');
+    const route = routes.find((r) => r.id === id);
+    if (!route?.enabled) throw new Error(`schedule.json: unknown or disabled route ${id}`);
+    return route;
+  });
+}
+
+/** Conservative exposure for four scheduled passes; manual dispatch is separate. */
+export function assertScheduledBudget(routes, workloads, config) {
+  if (!Number.isFinite(config.dailyBudgetUsd) || config.dailyBudgetUsd <= 0 || config.dailyBudgetUsd > 5) {
+    throw new Error('schedule.json: dailyBudgetUsd must be positive and at most 5');
+  }
+  let perPass = 0;
+  for (const route of routes) {
+    const cost = config.maxJobCostUsd?.[route.id];
+    if (!Number.isFinite(cost) || cost < 0 || (cost === 0 && route.id !== 'github-hosted-4vcpu')) {
+      throw new Error(`schedule.json: verified maximum job cost required for ${route.id}`);
+    }
+    perPass += cost * workloads.length;
+  }
+  if (perPass * 4 > config.dailyBudgetUsd) throw new Error('scheduled daily exposure exceeds the budget');
+  return perPass * 4;
+}
+
 /** Names of the directories under workloads/ that are valid workload ids. */
 export function listWorkloads(dir) {
   return readdirSync(dir)
@@ -67,8 +98,14 @@ export function buildMatrix(routes, workloads, repeats) {
 
 function main() {
   const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
-  const repeats = parseRepeats(process.env.REPEATS ?? '1');
-  const matrix = buildMatrix(readRoutes(join(root, 'routes.json')), listWorkloads(join(root, 'workloads')), repeats);
+  const scheduled = process.env.BENCHMARK_EVENT === 'schedule';
+  const config = scheduled ? JSON.parse(readFileSync(join(root, 'schedule.json'), 'utf8')) : null;
+  const repeats = scheduled ? 1 : parseRepeats(process.env.REPEATS ?? '1');
+  const routes = readRoutes(join(root, 'routes.json'));
+  const selected = scheduled ? scheduledRoutes(routes, config) : routes;
+  const workloads = listWorkloads(join(root, 'workloads'));
+  if (scheduled) console.error(`scheduled daily exposure: $${assertScheduledBudget(selected, workloads, config).toFixed(2)}`);
+  const matrix = buildMatrix(selected, workloads, repeats);
   if (matrix.include.length === 0) throw new Error('the matrix is empty: no enabled route or no workload');
   const line = `matrix=${JSON.stringify(matrix)}\n`;
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, line);

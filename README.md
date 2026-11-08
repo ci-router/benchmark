@@ -43,7 +43,7 @@ yourself, fork it (below).
 | `routes.json` | The routes under test (one enabled in stage 1, one declared but disabled) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
-| `.github/workflows/benchmark.yml` | The benchmark, started by hand |
+| `.github/workflows/benchmark.yml` | The benchmark, manual or scheduled |
 | `.github/workflows/archive.yml` | Saves the raw data of an earlier run, started by hand |
 
 ## Reproduce it by forking
@@ -74,7 +74,7 @@ node --test
 
 ## Safety
 
-The workflow starts only from `workflow_dispatch`. There is no `pull_request`
+The workflow starts from `workflow_dispatch` or the opted-in schedule. There is no `pull_request`
 trigger, no secrets in the benchmark jobs, no caches and no third-party actions;
 the four GitHub-owned actions in use are pinned by full commit SHA. The router
 itself refuses to place jobs that did not come from a manual or scheduled run on
@@ -87,3 +87,37 @@ the default branch, so a pull request from a fork cannot start paid compute.
 - The results and the raw data on the `results` branch are licensed under
   [Creative Commons Attribution 4.0 International](LICENSE-RESULTS) (CC-BY-4.0).
   Attribute them to "ci-router benchmark".
+
+## Recurring samples
+
+The schedule is at 00:23, 06:23, 12:23 and 18:23 UTC. GitHub may delay or skip
+scheduled workflows; these times are sampling targets, not availability guarantees.
+Set the repository Actions variable `BENCHMARK_SCHEDULE_ENABLED=true` to opt in.
+Forks do not run the schedule automatically. Manual dispatch remains available.
+
+`schedule.json` is an explicit list of enrolled routes, with exactly one repeat
+per workload. Initially it includes only the public GitHub baseline (two jobs per
+pass, eight per day). Adding or enabling a route in `routes.json` does not enroll
+it. Paid routes require a reviewed enrollment after account access, publication
+terms, route qualification and a verified maximum billed cost per job are
+confirmed. The owner-approved scheduled budget is $5/day. Before planning, the
+script checks the sum of each route's `maxJobCostUsd` times every workload times
+four daily passes; unknown costs, zero paid costs and totals over the budget
+fail closed. The current scheduled exposure is $0/day.
+
+This is a conservative planning ceiling based on reviewed cost bounds, not an
+account-level billing limiter. Include rounding, setup and teardown in those
+bounds and set provider-side limits before enrolling paid routes. Manual runs are outside this scheduled allowance. Automatic scheduled attempts
+cannot be rerun; use a budgeted manual dispatch for replacement samples. No paid route is enrolled by this change.
+
+The workflow permits at most two workload jobs at once, gives each 30 minutes,
+and serializes benchmark workflows without cancelling running samples. It keeps
+the existing immutable raw results and collector. At four successful passes per
+day a workload reaches 20 samples in five days and 40 in ten; missing and failed
+runs can extend that. Existing scoring thresholds still apply. Scheduling does
+not establish comparative performance, adequate coverage or routing integration.
+
+Hosted runner results describe the hosted product and its image/settings. They
+must not be used as measurements of a provider's separately provisioned VM route.
+Customer job history remains private and takes precedence over any future
+benchmark-based starting estimate.

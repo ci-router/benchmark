@@ -36,7 +36,10 @@ An external product and an internal backend from the same vendor are different
 routes. Shared workloads enable consistent experiments within each program;
 they do not remove differences in the execution path. A provider may participate
 in either program or both. Blacksmith can therefore appear in external market
-comparisons without an internal routing-matrix entry.
+comparisons without an internal routing-matrix entry. Conversely, sandbox-only
+providers such as agents37 belong in internal benchmarks through ci-router and
+have no external hosted-CI product to benchmark. Neither program requires a
+provider to participate in the other.
 
 Keep program identity in future route/result contracts and separate statistical
 aggregation, ranking and ingestion. Before collecting internal samples alongside

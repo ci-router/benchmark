@@ -12,6 +12,38 @@ harness and to see how noisy repeated runs are.
 **No comparison published yet.** There are no results on this page and none
 should be read into the numbers in a single run. Nothing is ranked.
 
+## External and internal benchmarks
+
+These are two separate benchmark programs with different purposes. They may use
+identical pinned workloads, but their results are not directly comparable and
+must not be pooled into one ranking or statistical population.
+
+- **External benchmarks** run on providers' own CI runner products. They provide
+  market reference points, including providers such as Blacksmith that are not
+  available as compute backends for ci-router. Their timings include that
+  product's runner image, provisioning, caching and service configuration. They
+  do not qualify a ci-router route and do not feed its placement scores or
+  starting estimates. The current GitHub-hosted baseline belongs here.
+- **Internal benchmarks** run through ci-router against an explicitly selected
+  provider, size and image in its routing matrix. They compare and qualify those
+  routes, including provisioning, reliability, workload performance and resource
+  telemetry. Only eligible internal measurements can inform route qualification
+  and future routing starting estimates; the customer's own job history takes
+  precedence. Internal collection and routing ingestion are not implemented by
+  the recurring external sampling change.
+
+An external product and an internal backend from the same vendor are different
+routes. Shared workloads enable consistent experiments within each program;
+they do not remove differences in the execution path. A provider may participate
+in either program or both. Blacksmith can therefore appear in external market
+comparisons without an internal routing-matrix entry.
+
+Keep program identity in future route/result contracts and separate statistical
+aggregation, ranking and ingestion. Before collecting internal samples alongside
+external ones, implement that separation in the collector and scorer. Today's
+schema and scorer contain external samples only; this document does not claim
+that mixed-program collection is already supported.
+
 ## Conflict of interest
 
 This benchmark is run by the people who build ci-router,
@@ -117,7 +149,6 @@ day a workload reaches 20 samples in five days and 40 in ten; missing and failed
 runs can extend that. Existing scoring thresholds still apply. Scheduling does
 not establish comparative performance, adequate coverage or routing integration.
 
-Hosted runner results describe the hosted product and its image/settings. They
-must not be used as measurements of a provider's separately provisioned VM route.
-Customer job history remains private and takes precedence over any future
-benchmark-based starting estimate.
+External hosted runner results describe their CI product and settings. Only
+qualified internal ci-router samples can inform future routing starting estimates.
+Customer job history remains private and takes precedence over those estimates.

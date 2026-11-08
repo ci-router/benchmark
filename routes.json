@@ -37,6 +37,17 @@
       "note": "Depot's own hosted runner (label depot-ubuntu-24.04: 2 vCPU, 8 GB, x86 on AWS EC2, $0.006 per minute per depot.dev/docs/github-actions/runner-types, read 2026-11-08), started through the Depot GitHub App the owner installed on 2026-11-08. Depot's Terms of Service (effective 2025-06-27) have no benchmark or comparison clause; B.4 asks customers to keep non-public information about the service confidential, so results record only what any job can observe."
     },
     {
+      "id": "depot-ubuntu-4vcpu",
+      "provider": "depot",
+      "runsOn": "depot-ubuntu-24.04-4",
+      "vcpu": 4,
+      "memoryGb": 16,
+      "image": "ubuntu-24.04",
+      "enabled": true,
+      "hostedRunner": true,
+      "note": "Depot's own hosted runner (label depot-ubuntu-24.04-4: 4 vCPU, 16 GB, x86 on AWS EC2, $0.012 per minute per depot.dev/docs/github-actions/runner-types, read 2026-11-08), the like-for-like match for github-hosted-4vcpu. Same Depot App and terms as depot-ubuntu-2vcpu."
+    },
+    {
       "id": "boat-4vcpu",
       "provider": "boat",
       "runsOn": "boat",

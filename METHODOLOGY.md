@@ -113,6 +113,11 @@ A route is one way of getting a runner:
   `transparentCache`) is where those two Ubicloud options are recorded before
   the route is enabled; `null` means not recorded. Both may change speed, so a
   result must be read together with them.
+  `depot-ubuntu-2vcpu` (label `depot-ubuntu-24.04`, 2 vCPU, 8 GB) is Depot's
+  own hosted runner, enabled once the Depot GitHub App was installed on
+  2026-11-08. At 2 vCPUs it is published as raw numbers and not scored, and its
+  job logs are not archived (`archiveLogs` is only set on the GitHub-hosted
+  baseline). A dispatch can run it alone with the `route` input.
 - **Router routes.** These come later. A router route can only be started from a
   manual or scheduled run on the default branch: the router refuses to place
   jobs from anything else, including a pull request from a fork. Not in stage 1.

@@ -24,6 +24,17 @@
         "transparentCache": null
       },
       "note": "Ubicloud's own hosted runner, started through the Ubicloud GitHub App. Disabled until that App is installed on the organization. Record the premium CPU and transparent cache settings here before enabling it; null means not recorded."
+    },
+    {
+      "id": "depot-ubuntu-2vcpu",
+      "provider": "depot",
+      "runsOn": "depot-ubuntu-24.04",
+      "vcpu": 2,
+      "memoryGb": 8,
+      "image": "ubuntu-24.04",
+      "enabled": true,
+      "hostedRunner": true,
+      "note": "Depot's own hosted runner (label depot-ubuntu-24.04: 2 vCPU, 8 GB, x86 on AWS EC2, $0.006 per minute per depot.dev/docs/github-actions/runner-types, read 2026-11-08), started through the Depot GitHub App the owner installed on 2026-11-08. Depot's Terms of Service (effective 2025-06-27) have no benchmark or comparison clause; B.4 asks customers to keep non-public information about the service confidential, so results record only what any job can observe."
     }
   ]
 }

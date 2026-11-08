@@ -10,6 +10,11 @@ on:
         required: false
         default: '1'
         type: string
+      route:
+        description: Run only this enabled route id (empty runs every enabled route)
+        required: false
+        default: ''
+        type: string
 
 permissions: {}
 
@@ -34,6 +39,7 @@ jobs:
         id: matrix
         env:
           REPEATS: ${{ inputs.repeats }}
+          ROUTE: ${{ inputs.route }}
         run: node bench/plan.mjs
 
   run:

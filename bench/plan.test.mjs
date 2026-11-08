@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildMatrix, parseRepeats, readRoutes } from './plan.mjs';
+import { buildMatrix, parseRepeats, readRoutes, selectRoutes } from './plan.mjs';
 
 test('parseRepeats accepts 1 to 10 only', () => {
   assert.equal(parseRepeats('1'), 1);
@@ -37,4 +37,28 @@ test('the Ubicloud hosted runner is declared but disabled, and stays out of the 
   assert.equal(ubicloud.enabled, false);
   const m = buildMatrix(routes, ['w1'], 1);
   assert.ok(m.include.every((j) => j.route.id !== 'ubicloud-hosted-4vcpu'));
+});
+
+test('selectRoutes: empty runs every enabled route; an id runs only that enabled route', () => {
+  const routes = [
+    { id: 'a', enabled: true },
+    { id: 'b', enabled: true },
+    { id: 'c', enabled: false },
+  ];
+  assert.deepEqual(selectRoutes(routes, '').map((r) => r.id), ['a', 'b']);
+  assert.deepEqual(selectRoutes(routes, undefined).map((r) => r.id), ['a', 'b']);
+  assert.deepEqual(selectRoutes(routes, 'b').map((r) => r.id), ['b']);
+  assert.throws(() => selectRoutes(routes, 'c'), /disabled/);
+  assert.throws(() => selectRoutes(routes, 'zz'), /not in routes.json/);
+  for (const bad of ['A', 'a b', '$(id)', 'a;b', '-a']) assert.throws(() => selectRoutes(routes, bad), /route id/, bad);
+});
+
+test('the Depot route is declared with its own label and 2 vCPU / 8 GB', () => {
+  const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
+  const depot = routes.find((r) => r.id === 'depot-ubuntu-2vcpu');
+  assert.ok(depot);
+  assert.equal(depot.runsOn, 'depot-ubuntu-24.04');
+  assert.equal(depot.vcpu, 2);
+  assert.equal(depot.memoryGb, 8);
+  assert.deepEqual(selectRoutes(routes, 'depot-ubuntu-2vcpu').map((r) => r.id), ['depot-ubuntu-2vcpu']);
 });

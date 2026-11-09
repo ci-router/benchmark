@@ -5,8 +5,9 @@ different runners, with the duration, cost and reliability of each one.
 
 ## Status
 
-**Stage 1: baseline.** This repository holds two workloads and one route, the
-GitHub-hosted 4-vCPU Ubuntu runner. The point of this stage is to prove the
+**Stage 1: baseline.** This repository holds two workloads and one enabled route,
+the GitHub-hosted 4-vCPU Ubuntu runner. Ubicloud, Depot, Boat and Tenki hosted
+runner configurations are prepared but disabled pending collection qualification. The point of this stage is to prove the
 harness and to see how noisy repeated runs are.
 
 **No comparison published yet.** There are no results on this page and none
@@ -40,7 +41,7 @@ yourself, fork it (below).
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
-| `routes.json` | The routes under test (one enabled in stage 1, one declared but disabled) |
+| `routes.json` | The routes under test (free baseline enabled; other hosted routes disabled) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
 | `.github/workflows/benchmark.yml` | The benchmark, started by hand |
@@ -53,7 +54,9 @@ yourself, fork it (below).
    the results are only comparable at the same size.
 2. In your fork's Actions tab, enable workflows.
 3. Run the `benchmark` workflow from the default branch with `workflow_dispatch`.
-   The `repeats` input is an integer from 1 to 10 (default 1).
+   The `repeats` input is an integer from 1 to 10 (default 1). The optional `route`
+   input selects exactly one enabled route; empty selects only the free GitHub
+   baseline. There is no implicit run-all selection.
 4. Each job is named `run <route> <workload> <repeat>`. The `setup` and `work`
    steps are timed by GitHub, and the log shows exactly what ran.
 5. When the run is on the default branch, the `collect` job appends one row per
@@ -87,3 +90,28 @@ the default branch, so a pull request from a fork cannot start paid compute.
 - The results and the raw data on the `results` branch are licensed under
   [Creative Commons Attribution 4.0 International](LICENSE-RESULTS) (CC-BY-4.0).
   Attribute them to "ci-router benchmark".
+
+## Qualifying another direct provider
+
+A route declaration is preparation, not proof of access or measured performance.
+Before enabling a paid route, verify repository-scoped runner access, publication
+terms, size/image eligibility, cache settings, and a bounded collection allowance.
+Account credits do not replace a spend limit. Include setup, teardown, startup fees,
+storage and retry exposure when bounding costs. Selecting a route or limiting
+parallel jobs is not a durable budget enforcement mechanism.
+
+The default dispatch selects only `github-hosted-4vcpu`, even after other routes
+are enabled. Explicit selection stays subject to the route's `enabled` flag.
+Jobs have a 30-minute timeout and at most two matrix jobs run concurrently.
+Paid routes remain disabled until their collection controls are qualified.
+
+Tenki's prepared label and resources come from its
+[runner quickstart](https://tenki.cloud/docs/runners/quickstart) and
+[Linux runner documentation](https://tenki.cloud/docs/runners/x64-runners), checked
+2026-11-09. Sandbox credentials alone do not establish hosted Actions runner access.
+Tenki documents automatic caching; record the actual settings rather than describing
+all setup work as cold. No provider result is implied by these route declarations.
+
+Briq and CI Router provider/size/image routes require their own verified execution
+contract; no guessed hosted label is declared here. Direct-provider observations do
+not qualify routed integrations or substitute for their independent measurements.

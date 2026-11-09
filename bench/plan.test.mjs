@@ -39,14 +39,14 @@ test('the Ubicloud hosted runner is declared but disabled, and stays out of the 
   assert.ok(m.include.every((j) => j.route.id !== 'ubicloud-hosted-4vcpu'));
 });
 
-test('selectRoutes: empty runs every enabled route; an id runs only that enabled route', () => {
+test('selectRoutes: default is only the free baseline; explicit selection cannot fan out', () => {
   const routes = [
-    { id: 'a', enabled: true },
+    { id: 'github-hosted-4vcpu', enabled: true },
     { id: 'b', enabled: true },
     { id: 'c', enabled: false },
   ];
-  assert.deepEqual(selectRoutes(routes, '').map((r) => r.id), ['a', 'b']);
-  assert.deepEqual(selectRoutes(routes, undefined).map((r) => r.id), ['a', 'b']);
+  assert.deepEqual(selectRoutes(routes, '').map((r) => r.id), ['github-hosted-4vcpu']);
+  assert.deepEqual(selectRoutes(routes, undefined).map((r) => r.id), ['github-hosted-4vcpu']);
   assert.deepEqual(selectRoutes(routes, 'b').map((r) => r.id), ['b']);
   assert.throws(() => selectRoutes(routes, 'c'), /disabled/);
   assert.throws(() => selectRoutes(routes, 'zz'), /not in routes.json/);
@@ -60,7 +60,7 @@ test('the Depot route is declared with its own label and 2 vCPU / 8 GB', () => {
   assert.equal(depot.runsOn, 'depot-ubuntu-24.04');
   assert.equal(depot.vcpu, 2);
   assert.equal(depot.memoryGb, 8);
-  assert.deepEqual(selectRoutes(routes, 'depot-ubuntu-2vcpu').map((r) => r.id), ['depot-ubuntu-2vcpu']);
+  assert.throws(() => selectRoutes(routes, 'depot-ubuntu-2vcpu'), /disabled/);
 });
 
 test('the Boat routes are declared with their own labels and sizes', () => {
@@ -73,4 +73,22 @@ test('the Boat routes are declared with their own labels and sizes', () => {
   assert.equal(two.runsOn, 'boat-small');
   assert.equal(two.vcpu, 2);
   assert.ok(!four.archiveLogs && !two.archiveLogs);
+});
+
+
+test('unqualified hosted routes remain disabled, including the documented Tenki configuration', () => {
+  const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
+  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu']);
+  const tenki = routes.find((r) => r.id === 'tenki-hosted-4vcpu');
+  assert.equal(tenki.runsOn, 'tenki-standard-medium-4c-8g');
+  assert.equal(tenki.vcpu, 4);
+  assert.equal(tenki.memoryGb, 8);
+  for (const route of routes.filter((r) => r.provider !== 'github')) {
+    assert.throws(() => selectRoutes(routes, route.id), /disabled/);
+  }
+});
+
+test('missing or disabled baseline fails closed rather than selecting paid routes', () => {
+  assert.throws(() => selectRoutes([{ id: 'paid', enabled: true }], ''), /not in routes.json/);
+  assert.throws(() => selectRoutes([{ id: 'github-hosted-4vcpu', enabled: false }, { id: 'paid', enabled: true }], ''), /disabled/);
 });

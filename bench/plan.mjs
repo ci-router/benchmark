@@ -55,9 +55,9 @@ export function listWorkloads(dir) {
     .sort();
 }
 
-/** An empty ROUTE runs every enabled route; otherwise exactly that enabled route. */
+/** Default to the free baseline. Every other route must be selected explicitly. */
 export function selectRoutes(routes, only) {
-  if (only === undefined || only === '') return routes.filter((r) => r.enabled);
+  if (only === undefined || only === '') only = 'github-hosted-4vcpu';
   if (typeof only !== 'string' || !ID_RE.test(only)) throw new Error('route must be a route id');
   const route = routes.find((r) => r.id === only);
   if (!route) throw new Error(`route ${only} is not in routes.json`);

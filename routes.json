@@ -32,9 +32,9 @@
       "vcpu": 2,
       "memoryGb": 8,
       "image": "ubuntu-24.04",
-      "enabled": true,
+      "enabled": false,
       "hostedRunner": true,
-      "note": "Depot's own hosted runner (label depot-ubuntu-24.04: 2 vCPU, 8 GB, x86 on AWS EC2, $0.006 per minute per depot.dev/docs/github-actions/runner-types, read 2026-11-08), started through the Depot GitHub App the owner installed on 2026-11-08. Depot's Terms of Service (effective 2025-06-27) have no benchmark or comparison clause; B.4 asks customers to keep non-public information about the service confidential, so results record only what any job can observe."
+      "note": "Collection disabled pending repository access, publication terms and bounded spend verification. Depot's own hosted runner (label depot-ubuntu-24.04: 2 vCPU, 8 GB, x86 on AWS EC2, $0.006 per minute per depot.dev/docs/github-actions/runner-types, read 2026-11-08), started through the Depot GitHub App the owner installed on 2026-11-08. Depot's Terms of Service (effective 2025-06-27) have no benchmark or comparison clause; B.4 asks customers to keep non-public information about the service confidential, so results record only what any job can observe."
     },
     {
       "id": "depot-ubuntu-4vcpu",
@@ -43,9 +43,9 @@
       "vcpu": 4,
       "memoryGb": 16,
       "image": "ubuntu-24.04",
-      "enabled": true,
+      "enabled": false,
       "hostedRunner": true,
-      "note": "Depot's own hosted runner (label depot-ubuntu-24.04-4: 4 vCPU, 16 GB, x86 on AWS EC2, $0.012 per minute per depot.dev/docs/github-actions/runner-types, read 2026-11-08), the like-for-like match for github-hosted-4vcpu. Same Depot App and terms as depot-ubuntu-2vcpu."
+      "note": "Collection disabled pending repository access, publication terms and bounded spend verification. Depot's own hosted runner (label depot-ubuntu-24.04-4: 4 vCPU, 16 GB, x86 on AWS EC2, $0.012 per minute per depot.dev/docs/github-actions/runner-types, read 2026-11-08), the like-for-like match for github-hosted-4vcpu. Same Depot App and terms as depot-ubuntu-2vcpu."
     },
     {
       "id": "boat-4vcpu",
@@ -54,9 +54,9 @@
       "vcpu": 4,
       "memoryGb": 8,
       "image": "ubuntu",
-      "enabled": true,
+      "enabled": false,
       "hostedRunner": true,
-      "note": "Label boat (Boat's default size: 4 vCPU, 8 GB, 51 GB disk, $0.036 per hour). The CI page also says a job gets 4 GB from Boat plus swap, so the memory limit is unclear. Boat's own CI runner (docs.boat.dev/ci and docs.boat.dev/pricing.md, read 2026-11-08): a fresh sandbox per job on shared vCPUs, no promised CPU model, billed per second, CI needs Boat's $20/month plan, extra starts above the plan's included ones cost $0.03 to $0.07. The docs do not name the Ubuntu release, so the image is what the job reports. Boat refuses jobs from public repositories until the account owner runs `boat ci public <account> on`. Boat's terms (boat.dev/terms, effective 2026-10-12) have no benchmark, comparison or confidentiality clause about Boat; TOS-10 forbids probing or evading usage limits and metering, which this suite does not do."
+      "note": "Collection disabled pending repository access, publication terms and bounded spend verification. Label boat (Boat's default size: 4 vCPU, 8 GB, 51 GB disk, $0.036 per hour). The CI page also says a job gets 4 GB from Boat plus swap, so the memory limit is unclear. Boat's own CI runner (docs.boat.dev/ci and docs.boat.dev/pricing.md, read 2026-11-08): a fresh sandbox per job on shared vCPUs, no promised CPU model, billed per second, CI needs Boat's $20/month plan, extra starts above the plan's included ones cost $0.03 to $0.07. The docs do not name the Ubuntu release, so the image is what the job reports. Boat refuses jobs from public repositories until the account owner runs `boat ci public <account> on`. Boat's terms (boat.dev/terms, effective 2026-10-12) have no benchmark, comparison or confidentiality clause about Boat; TOS-10 forbids probing or evading usage limits and metering, which this suite does not do."
     },
     {
       "id": "boat-2vcpu",
@@ -65,9 +65,25 @@
       "vcpu": 2,
       "memoryGb": 4,
       "image": "ubuntu",
-      "enabled": true,
+      "enabled": false,
       "hostedRunner": true,
-      "note": "Label boat-small (2 vCPU, 4 GB, 51 GB disk, $0.018 per hour). Boat's own CI runner (docs.boat.dev/ci and docs.boat.dev/pricing.md, read 2026-11-08): a fresh sandbox per job on shared vCPUs, no promised CPU model, billed per second, CI needs Boat's $20/month plan, extra starts above the plan's included ones cost $0.03 to $0.07. The docs do not name the Ubuntu release, so the image is what the job reports. Boat refuses jobs from public repositories until the account owner runs `boat ci public <account> on`. Boat's terms (boat.dev/terms, effective 2026-10-12) have no benchmark, comparison or confidentiality clause about Boat; TOS-10 forbids probing or evading usage limits and metering, which this suite does not do."
+      "note": "Collection disabled pending repository access, publication terms and bounded spend verification. Label boat-small (2 vCPU, 4 GB, 51 GB disk, $0.018 per hour). Boat's own CI runner (docs.boat.dev/ci and docs.boat.dev/pricing.md, read 2026-11-08): a fresh sandbox per job on shared vCPUs, no promised CPU model, billed per second, CI needs Boat's $20/month plan, extra starts above the plan's included ones cost $0.03 to $0.07. The docs do not name the Ubuntu release, so the image is what the job reports. Boat refuses jobs from public repositories until the account owner runs `boat ci public <account> on`. Boat's terms (boat.dev/terms, effective 2026-10-12) have no benchmark, comparison or confidentiality clause about Boat; TOS-10 forbids probing or evading usage limits and metering, which this suite does not do."
+    },
+    {
+      "id": "tenki-hosted-4vcpu",
+      "provider": "tenki",
+      "runsOn": "tenki-standard-medium-4c-8g",
+      "vcpu": 4,
+      "memoryGb": 8,
+      "image": "ubuntu-24.04",
+      "enabled": false,
+      "hostedRunner": true,
+      "archiveLogs": false,
+      "settings": {
+        "transparentCache": null,
+        "stickyDisk": null
+      },
+      "note": "Prepared from tenki.cloud/docs/runners/quickstart and tenki.cloud/docs/runners/x64-runners.md, checked 2026-11-09. The quickstart gives this 4-vCPU/8-GB label; Linux runners default to Ubuntu 24.04. Disabled until the actual repository has runner access, account size eligibility and publication terms are verified, cache/sticky-disk settings recorded, and collection spend is bounded. Sandbox API access is not hosted-runner access. The actual image and resources must be checked against the job fingerprint."
     }
   ]
 }

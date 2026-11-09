@@ -112,6 +112,13 @@ Tenki's prepared label and resources come from its
 Tenki documents automatic caching; record the actual settings rather than describing
 all setup work as cold. No provider result is implied by these route declarations.
 
+Tenki's [Terms of Service, section 4.2(iv)](https://tenki.cloud/docs/terms-of-service.md)
+and [Acceptable Use Policy, section 3](https://tenki.cloud/docs/acceptable-use-policy.md),
+checked 2026-11-09, require prior written consent for publishing benchmark results
+and for the competing-service uses described there. Obtain and verify consent covering
+the intended benchmark and publication before executing this route. Account setup,
+runner access or credits do not establish that consent. The route remains disabled.
+
 Briq and CI Router provider/size/image routes require their own verified execution
 contract; no guessed hosted label is declared here. Direct-provider observations do
 not qualify routed integrations or substitute for their independent measurements.

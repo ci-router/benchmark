@@ -142,9 +142,10 @@ Manual dispatch remains available.
 `github-hosted-4vcpu` baseline, the workloads are exactly `node-typescript` and
 `rust-analyzer`, and there is exactly one repeat. The schedule assumes the
 public repository's standard GitHub-hosted runner has no execution charge
-(`$0/day`). Adding or enabling a route or workload in `routes.json` or
-`workloads/` does not enroll it; the plan fails closed until the schedule is
-reviewed with the new set. Paid routes are rejected by the schedule entirely.
+(`$0/day`). Adding or enabling an unrelated route does not enroll it or stop
+baseline planning. Changes to the workload set or the enrolled baseline's runner
+label, image or size fail closed until reviewed. The baseline is pinned to
+`ubuntu-24.04`, 4 vCPUs and 16 GB; paid routes are rejected by the schedule entirely.
 
 The owner-approved operational allocation is $10/day combined ($2 external /
 $8 internal). This external schedule reserves $0/day. The $1 Depot allocation

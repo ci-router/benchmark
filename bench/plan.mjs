@@ -53,6 +53,15 @@ export function readRoutes(path) {
   });
 }
 
+/** Pin the billing-sensitive runner label and reviewed baseline sample shape. */
+function assertFreeBaselineRoute(route) {
+  if (route.provider !== 'github' || route.id !== FREE_BASELINE_ROUTE ||
+      route.runsOn !== 'ubuntu-24.04' || route.image !== 'ubuntu-24.04' ||
+      route.vcpu !== 4 || route.memoryGb !== 16) {
+    throw new Error(`schedule.json: ${route.id} is not the reviewed free public GitHub baseline`);
+  }
+}
+
 /** Scheduled sampling is explicit: enabling a route for dispatch does not enroll it. */
 export function scheduledRoutes(routes, config) {
   if (!config || config.program !== 'external') {
@@ -66,9 +75,7 @@ export function scheduledRoutes(routes, config) {
     if (typeof id !== 'string' || !ID_RE.test(id)) throw new Error('schedule.json: invalid route id');
     const route = routes.find((r) => r.id === id);
     if (!route?.enabled) throw new Error(`schedule.json: unknown or disabled route ${id}`);
-    if (route.provider !== 'github' || route.id !== FREE_BASELINE_ROUTE) {
-      throw new Error(`schedule.json: ${id} is not the free public GitHub baseline`);
-    }
+    assertFreeBaselineRoute(route);
     return route;
   });
 }
@@ -113,9 +120,7 @@ export function assertScheduledFreeBaseline(routes, workloads, config) {
     throw new Error('schedule.json: maxJobCostUsd must list exactly the scheduled routes');
   }
   for (const route of routes) {
-    if (route.provider !== 'github' || route.id !== FREE_BASELINE_ROUTE) {
-      throw new Error(`schedule.json: ${route.id} is not the free public GitHub baseline`);
-    }
+    assertFreeBaselineRoute(route);
     if (config.maxJobCostUsd?.[route.id] !== 0) {
       throw new Error(`schedule.json: ${route.id} must have a verified $0 execution charge`);
     }

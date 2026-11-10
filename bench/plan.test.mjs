@@ -17,6 +17,7 @@ import {
 } from './plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const baseline = { id: 'github-hosted-4vcpu', provider: 'github', enabled: true, runsOn: 'ubuntu-24.04', image: 'ubuntu-24.04', vcpu: 4, memoryGb: 16 };
 
 test('parseRepeats accepts 1 to 10 only', () => {
   assert.equal(parseRepeats('1'), 1);
@@ -117,14 +118,14 @@ test('paid pilot requires exactly one explicit workload and one repetition', () 
 });
 
 test('scheduled sampling never enrolls a newly enabled paid route implicitly', () => {
-  const routes = [{ id: 'github-hosted-4vcpu', provider: 'github', enabled: true }, { id: 'paid', provider: 'depot', enabled: true }];
+  const routes = [{ ...baseline }, { id: 'paid', provider: 'depot', enabled: true }];
   const selected = scheduledRoutes(routes, { program: 'external', routes: ['github-hosted-4vcpu'], repeats: 1 });
   assert.deepEqual(selected, [routes[0]]);
   assert.equal(buildMatrix(selected, ['node', 'rust'], 1).include.length, 2);
 });
 
 test('scheduled sampling rejects disabled, unknown, duplicate and invalid routes or repeats', () => {
-  const routes = [{ id: 'github-hosted-4vcpu', provider: 'github', enabled: true }, { id: 'disabled', provider: 'github', enabled: false }];
+  const routes = [{ ...baseline }, { id: 'disabled', provider: 'github', enabled: false }];
   for (const config of [null, {}, { program: 'external', routes: [], repeats: 1 },
     { program: 'external', routes: ['disabled'], repeats: 1 }, { program: 'external', routes: ['missing'], repeats: 1 },
     { program: 'external', routes: ['github-hosted-4vcpu', 'github-hosted-4vcpu'], repeats: 1 },
@@ -137,7 +138,7 @@ test('scheduled sampling rejects disabled, unknown, duplicate and invalid routes
 
 test('scheduled sampling rejects non-external programs and every paid or non-GitHub route', () => {
   const routes = [
-    { id: 'github-hosted-4vcpu', provider: 'github', enabled: true },
+    { ...baseline },
     { id: 'depot-ubuntu-2vcpu', provider: 'depot', enabled: true },
     { id: 'other-github', provider: 'github', enabled: true },
   ];
@@ -163,7 +164,7 @@ test('scheduled suite must match suite.json', () => {
 });
 
 test('the external schedule is free-only and rejects paid enrollment metadata', () => {
-  const routes = [{ id: 'github-hosted-4vcpu', provider: 'github' }];
+  const routes = [{ ...baseline }];
   const workloads = ['node-typescript', 'rust-analyzer'];
   const config = { dailyBudgetUsd: 0, maxJobCostUsd: { 'github-hosted-4vcpu': 0 } };
   assert.equal(assertScheduledFreeBaseline(routes, workloads, config), 0);
@@ -175,6 +176,19 @@ test('the external schedule is free-only and rejects paid enrollment metadata', 
   }), /free public GitHub baseline/);
 });
 
+test('scheduled baseline rejects paid runner labels and sample shape drift', () => {
+  const config = { program: 'external', routes: [baseline.id], repeats: 1,
+    dailyBudgetUsd: 0, maxJobCostUsd: { [baseline.id]: 0 } };
+  for (const change of [
+    { runsOn: 'depot-ubuntu-24.04' }, { runsOn: 'ubuntu-latest' },
+    { runsOn: undefined }, { image: 'ubuntu-22.04' }, { vcpu: 8 }, { memoryGb: 32 },
+  ]) {
+    const routes = [{ ...baseline, ...change }];
+    assert.throws(() => scheduledRoutes(routes, config), /reviewed free public GitHub baseline/);
+    assert.throws(() => assertScheduledFreeBaseline(routes, ['node-typescript'], config), /reviewed free public GitHub baseline/);
+  }
+});
+
 test('the committed schedule validates against the committed routes, workloads and suite', () => {
   const routes = readRoutes(join(root, 'routes.json'));
   const available = listWorkloads(join(root, 'workloads'));
@@ -183,7 +197,7 @@ test('the committed schedule validates against the committed routes, workloads a
   assert.equal(config.program, 'external');
   assertScheduledSuite(config, suite.suite);
   const selected = scheduledRoutes(routes, config);
-  assert.deepEqual(selected.map((r) => r.id), ['github-hosted-4vcpu']);
+  assert.deepEqual(selected, [baseline]);
   const workloads = scheduledWorkloads(available, config);
   assert.deepEqual(workloads, ['node-typescript', 'rust-analyzer']);
   assert.equal(assertScheduledFreeBaseline(selected, workloads, config), 0);

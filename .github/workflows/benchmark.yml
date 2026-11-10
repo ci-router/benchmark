@@ -1,7 +1,8 @@
 name: benchmark
 
-# Scheduled runs use an explicit route allowlist; manual runs retain their matrix.
-# No pull_request trigger: a pull request must never start a benchmark job.
+# Scheduled runs use an explicit free-baseline allowlist; manual runs retain
+# their route/workload selection. No pull_request trigger: a pull request must
+# never start a benchmark job.
 on:
   schedule:
     - cron: '23 */6 * * *'
@@ -12,6 +13,20 @@ on:
         required: false
         default: '1'
         type: string
+      route:
+        description: One enabled route id (empty selects the free GitHub baseline)
+        required: false
+        default: ''
+        type: string
+      workload:
+        description: One workload (required for paid pilots)
+        required: false
+        default: all
+        type: choice
+        options:
+          - all
+          - node-typescript
+          - rust-analyzer
 
 permissions: {}
 
@@ -22,7 +37,7 @@ concurrency:
 
 jobs:
   plan:
-    if: ${{ github.event_name != 'schedule' || (github.repository == 'ci-router/benchmark' && vars.BENCHMARK_SCHEDULE_ENABLED == 'true' && github.run_attempt == 1) }}
+    if: ${{ github.event_name != 'schedule' || (github.repository == 'ci-router/benchmark' && github.ref == 'refs/heads/main' && github.event.repository.private == false && github.run_attempt == 1) }}
     name: plan
     runs-on: ubuntu-24.04
     permissions: {}
@@ -44,6 +59,8 @@ jobs:
         id: matrix
         env:
           REPEATS: ${{ inputs.repeats || '1' }}
+          ROUTE: ${{ inputs.route }}
+          WORKLOAD: ${{ inputs.workload }}
           BENCHMARK_EVENT: ${{ github.event_name }}
         run: node bench/plan.mjs
 
@@ -52,11 +69,11 @@ jobs:
     name: run ${{ matrix.route.id }} ${{ matrix.workload }} ${{ matrix.rep }}
     needs: plan
     runs-on: ${{ matrix.route.runsOn }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     permissions: {}
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       WORKLOAD: ${{ matrix.workload }}

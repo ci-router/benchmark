@@ -133,6 +133,9 @@ export function buildRows(jobs, ctx, readFingerprint = readFingerprintFile) {
   const warn = ctx.warn ?? (() => {});
   const rows = [];
   const seen = new Set();
+  // download-artifact v8 flattens a single matched artifact into the target path.
+  // Only one benchmark job makes that root fingerprint unambiguous.
+  const oneBenchmarkJob = jobs.filter(j => j && typeof j.name === 'string' && j.name.startsWith('run ')).length === 1;
   for (const job of jobs) {
     if (!job || typeof job !== 'object') continue;
     if (typeof job.name !== 'string' || !job.name.startsWith('run ')) continue; // plan, collect
@@ -155,9 +158,12 @@ export function buildRows(jobs, ctx, readFingerprint = readFingerprintFile) {
       continue;
     }
     seen.add(key);
-    const fingerprint = readFingerprint(
+    let fingerprint = readFingerprint(
       join(ctx.artifactsDir, artifactDirName(ctx.attempt, parsed.routeId, parsed.workload, parsed.rep), 'fingerprint.json'),
     );
+    if (fingerprint === null && oneBenchmarkJob) {
+      fingerprint = readFingerprint(join(ctx.artifactsDir, 'fingerprint.json'));
+    }
     rows.push({
       suite: ctx.suite,
       route: parsed.routeId,

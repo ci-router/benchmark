@@ -3,7 +3,8 @@
 Suite version: see `suite.json`. Scores are only compared within one suite
 version. A change to any pin, toolchain or script makes a new one.
 
-Status: stage 1. One route, two workloads, no comparison published.
+Status: GitHub baseline collection plus a bounded native Depot 2-vCPU pilot.
+Two workloads are available; each paid pilot dispatch selects exactly one.
 
 ## Why this exists
 
@@ -140,14 +141,26 @@ A route is one way of getting a runner:
   are compared at 4 vCPUs. Smaller and larger sizes are published as raw numbers
   and are not scored.
 - **Providers with their own GitHub Actions integration**, using their own
-  labels. This measures what a customer gets from that provider directly. Not in
-  stage 1. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
+  labels. This measures what a customer gets from that provider directly. The
+  bounded Depot pilot is the currently enabled native integration. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
   declared in `routes.json` with `"enabled": false`: it is Ubicloud's own hosted
   runner, and it stays out of the dispatch matrix until the Ubicloud GitHub App
   is installed on the organization. Its `settings` object (`premiumCpu`,
   `transparentCache`) is where those two Ubicloud options are recorded before
   the route is enabled; `null` means not recorded. Both may change speed, so a
   result must be read together with them.
+  `depot-ubuntu-2vcpu` (label `depot-ubuntu-24.04`, 2 vCPU, 8 GB) is Depot's
+  own hosted runner. Its App was installed on 2026-11-08; the 2026-11-10
+  pilot enables only this size with one explicit workload and repetition. At 2 vCPUs it is published as raw numbers and not scored, and its
+  job logs are not archived (`archiveLogs` is only set on the GitHub-hosted
+  baseline). A dispatch selects it with `route=depot-ubuntu-2vcpu` and an explicit `workload`.
+  `boat-4vcpu` (label `boat`, 4 vCPU, 8 GB) and `boat-2vcpu` (label
+  `boat-small`, 2 vCPU, 4 GB) are prepared Boat CI runner routes. The Boat
+  GitHub App was installed on 2026-11-08, but both routes remain disabled. Boat runs each job in a fresh sandbox
+  on shared vCPUs and does not promise a CPU model, so the CPU model each job
+  reports matters more than usual when reading its numbers. `boat-4vcpu` is at
+  the reference size; `boat-2vcpu` is published as raw numbers and not scored.
+  Neither archives job logs.
 - **Router routes.** These come later. A router route can only be started from a
   manual or scheduled run on the default branch: the router refuses to place
   jobs from anything else, including a pull request from a fork. Not in stage 1.
@@ -285,7 +298,7 @@ cell whose coefficient of variation is above 15% is flagged as unstable.
 
 ## Safety of the benchmark itself
 
-- Only `workflow_dispatch` and the opted-in schedule start the workflow. It
+- Only `workflow_dispatch` and the schedule start the workflow. It
   has no `pull_request` trigger, so a fork's pull request cannot add its own run.
 - The default branch is protected: no direct pushes, changes need a review.
 - Benchmark jobs have no secrets and `permissions: {}`. Only the GitHub-hosted
@@ -314,49 +327,51 @@ cell whose coefficient of variation is above 15% is flagged as unstable.
   can behave differently.
 - The public hosted runner has more CPU than the private one most paying
   customers get.
-- With one route and a few runs, nothing here says anything about the spread of
-  results. Stage 1 exists to measure that.
+- With few runs per route, conclusions about the spread of results remain limited.
+  Repeated observations are retained to show that variation.
 
 ## Stages
 
-1. **Baseline:** this repository, two workloads, GitHub-hosted only. Proves the
-   harness and shows how noisy repeated runs are. No comparison is published.
-2. Other providers' own labels, once their terms are checked.
+1. **Baseline:** GitHub-hosted measurements established the two-workload harness
+   and recorded repeated-run variation.
+2. **Native provider pilots (current):** Depot 2-vCPU is enabled for explicit
+   one-workload, one-repeat jobs. Other native routes remain disabled.
 3. Router routes, once the router's checks for these runs are in place.
 4. The full suite, a schedule and a results page, after each provider's terms
    are checked for restrictions on publishing benchmarks.
 
 ## Recurring samples
 
-The schedule is at 00:23, 06:23, 12:23 and 18:23 UTC. GitHub may delay or skip
-scheduled workflows; these times are sampling targets, not availability guarantees.
-Set the repository Actions variable `BENCHMARK_SCHEDULE_ENABLED=true` to opt in.
-Forks do not run the schedule automatically. Manual dispatch remains available.
+The free public GitHub baseline is sampled every six hours, at 00:23, 06:23,
+12:23 and 18:23 UTC. GitHub may delay or skip scheduled workflows, and the
+workflow's global concurrency group can drop a pending pass when a newer one
+queues; these times are sampling targets, not availability guarantees. The
+schedule is enabled for this public repository on `main`; forks do not run it.
+Manual dispatch remains available.
 
-`schedule.json` is an explicit list of enrolled routes, with exactly one repeat
-per workload. Initially it includes only the public GitHub baseline (two jobs per
-pass, eight per day). Adding or enabling a route in `routes.json` does not enroll
-it. Paid routes require a reviewed enrollment after account access, publication
-terms, route qualification and a verified maximum billed cost per job are
-confirmed. The owner-approved budget is $5/day TOTAL across internal and external
-programs. This external schedule reserves $0/day; the internal preparation reserves
-the remaining $5/day but cannot execute. Do not allocate $5 independently in both
-repositories. Before planning, the
-script checks the sum of each route's `maxJobCostUsd` times every workload times
-four daily passes; unknown costs, zero paid costs and totals over the budget
-fail closed. The current scheduled exposure is $0/day.
+`schedule.json` is an explicit external-program enrollment: `program` is
+`external`, `suite` is `0.2.0`, the routes are exactly the public
+`github-hosted-4vcpu` baseline, the workloads are exactly `node-typescript` and
+`rust-analyzer`, and there is exactly one repeat. The schedule assumes the
+public repository's standard GitHub-hosted runner has no execution charge
+(`$0/day`). Adding or enabling a route or workload in `routes.json` or
+`workloads/` does not enroll it; the plan fails closed until the schedule is
+reviewed with the new set. Paid routes are rejected by the schedule entirely.
 
-This is a conservative planning ceiling based on reviewed cost bounds, not an
-account-level billing limiter. Include rounding, setup and teardown in those
-bounds and set provider-side limits before enrolling paid routes. Manual runs are outside this scheduled allowance. Automatic scheduled attempts
-cannot be rerun; use a budgeted manual dispatch for replacement samples. No paid route is enrolled by this change.
+The owner-approved operational allocation is $10/day combined ($2 external /
+$8 internal). This external schedule reserves $0/day. The $1 Depot allocation
+remains part of the external allocation for the explicit manual pilot; it is a
+retained allocation, not a refund or an actual invoice. No paid schedule and no
+paid retry are authorized by this change. Scheduled reruns are skipped; a
+replacement sample needs a fresh explicit allocation and is not automatic.
 
-The workflow permits at most two workload jobs at once, gives each 30 minutes,
-and serializes benchmark workflows without cancelling running samples. It keeps
-the existing immutable raw results and collector. At four successful passes per
-day a workload reaches 20 samples in five days and 40 in ten; missing and failed
-runs can extend that. Existing scoring thresholds still apply. Scheduling does
-not establish comparative performance, adequate coverage or routing integration.
+The workflow runs at most one matrix job at a time with a 15-minute timeout and
+serializes benchmark workflows without cancelling running samples. It keeps the
+existing immutable raw results and collector. At four successful passes per day
+a workload reaches 20 samples in five days and 40 in ten; missing, skipped and
+failed runs can extend that. Existing scoring thresholds still apply. Scheduling
+does not establish comparative performance, adequate coverage or routing
+integration.
 
 External hosted runner results describe their CI product and settings. Only
 qualified internal ci-router samples can inform future routing starting estimates.

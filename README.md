@@ -5,9 +5,11 @@ different runners, with the duration, cost and reliability of each one.
 
 ## Status
 
-**Stage 1: baseline.** This repository holds two workloads and one route, the
-GitHub-hosted 4-vCPU Ubuntu runner. The point of this stage is to prove the
-harness and to see how noisy repeated runs are.
+**Bounded external collection.** The GitHub-hosted baseline is the default.
+Depot 2-vCPU is enabled only for explicit one-workload, one-repeat pilot dispatches.
+Other Depot sizes, Ubicloud, Boat and Tenki remain disabled. A prior successful
+same-repository Depot run and the installed native App establish the pilot basis;
+the new job still exercises current repository/account admission.
 
 **No comparison published yet.** There are no results on this page and none
 should be read into the numbers in a single run. Nothing is ranked.
@@ -75,7 +77,7 @@ yourself, fork it (below).
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
-| `routes.json` | The routes under test (one enabled in stage 1, one declared but disabled) |
+| `routes.json` | The routes under test (GitHub default; explicit one-job Depot 2-vCPU pilot enabled) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
 | `.github/workflows/benchmark.yml` | The benchmark, manual or scheduled |
@@ -88,7 +90,10 @@ yourself, fork it (below).
    the results are only comparable at the same size.
 2. In your fork's Actions tab, enable workflows.
 3. Run the `benchmark` workflow from the default branch with `workflow_dispatch`.
-   The `repeats` input is an integer from 1 to 10 (default 1).
+   The `repeats` input is an integer from 1 to 10 (default 1). The optional `route`
+   input selects exactly one enabled route; empty selects only the free GitHub
+   baseline. There is no implicit run-all selection. For a paid route, select one
+   explicit `workload` and `repeats=1`; `all` is rejected.
 4. Each job is named `run <route> <workload> <repeat>`. The `setup` and `work`
    steps are timed by GitHub, and the log shows exactly what ran.
 5. When the run is on the default branch, the `collect` job appends one row per
@@ -109,7 +114,7 @@ node --test
 
 ## Safety
 
-The workflow starts from `workflow_dispatch` or the opted-in schedule. There is no `pull_request`
+The workflow starts from `workflow_dispatch` or the schedule. There is no `pull_request`
 trigger, no secrets in the benchmark jobs, no caches and no third-party actions;
 the four GitHub-owned actions in use are pinned by full commit SHA. The router
 itself refuses to place jobs that did not come from a manual or scheduled run on
@@ -125,36 +130,89 @@ the default branch, so a pull request from a fork cannot start paid compute.
 
 ## Recurring samples
 
-The schedule is at 00:23, 06:23, 12:23 and 18:23 UTC. GitHub may delay or skip
-scheduled workflows; these times are sampling targets, not availability guarantees.
-Set the repository Actions variable `BENCHMARK_SCHEDULE_ENABLED=true` to opt in.
-Forks do not run the schedule automatically. Manual dispatch remains available.
+The free public GitHub baseline is sampled every six hours, at 00:23, 06:23,
+12:23 and 18:23 UTC. GitHub may delay or skip scheduled workflows, and the
+workflow's global concurrency group can drop a pending pass when a newer one
+queues; these times are sampling targets, not availability guarantees. The
+schedule is enabled for this public repository on `main`; forks do not run it.
+Manual dispatch remains available.
 
-`schedule.json` is an explicit list of enrolled routes, with exactly one repeat
-per workload. Initially it includes only the public GitHub baseline (two jobs per
-pass, eight per day). Adding or enabling a route in `routes.json` does not enroll
-it. Paid routes require a reviewed enrollment after account access, publication
-terms, route qualification and a verified maximum billed cost per job are
-confirmed. The owner-approved budget is $5/day TOTAL across internal and external
-programs. This external schedule reserves $0/day; the internal preparation reserves
-the remaining $5/day but cannot execute. Do not allocate $5 independently in both
-repositories. Before planning, the
-script checks the sum of each route's `maxJobCostUsd` times every workload times
-four daily passes; unknown costs, zero paid costs and totals over the budget
-fail closed. The current scheduled exposure is $0/day.
+`schedule.json` is an explicit external-program enrollment: `program` is
+`external`, `suite` is `0.2.0`, the routes are exactly the public
+`github-hosted-4vcpu` baseline, the workloads are exactly `node-typescript` and
+`rust-analyzer`, and there is exactly one repeat. The schedule assumes the
+public repository's standard GitHub-hosted runner has no execution charge
+(`$0/day`). Adding or enabling a route or workload in `routes.json` or
+`workloads/` does not enroll it; the plan fails closed until the schedule is
+reviewed with the new set. Paid routes are rejected by the schedule entirely.
 
-This is a conservative planning ceiling based on reviewed cost bounds, not an
-account-level billing limiter. Include rounding, setup and teardown in those
-bounds and set provider-side limits before enrolling paid routes. Manual runs are outside this scheduled allowance. Automatic scheduled attempts
-cannot be rerun; use a budgeted manual dispatch for replacement samples. No paid route is enrolled by this change.
+The owner-approved operational allocation is $10/day combined ($2 external /
+$8 internal). This external schedule reserves $0/day. The $1 Depot allocation
+remains part of the external allocation for the explicit manual pilot; it is a
+retained allocation, not a refund or an actual invoice. No paid schedule and no
+paid retry are authorized by this change. Scheduled reruns are skipped; a
+replacement sample needs a fresh explicit allocation and is not automatic.
 
-The workflow permits at most two workload jobs at once, gives each 30 minutes,
-and serializes benchmark workflows without cancelling running samples. It keeps
-the existing immutable raw results and collector. At four successful passes per
-day a workload reaches 20 samples in five days and 40 in ten; missing and failed
-runs can extend that. Existing scoring thresholds still apply. Scheduling does
-not establish comparative performance, adequate coverage or routing integration.
+The workflow runs at most one matrix job at a time with a 15-minute timeout and
+serializes benchmark workflows without cancelling running samples. It keeps the
+existing immutable raw results and collector. At four successful passes per day
+a workload reaches 20 samples in five days and 40 in ten; missing, skipped and
+failed runs can extend that. Existing scoring thresholds still apply. Scheduling
+does not establish comparative performance, adequate coverage or routing
+integration.
 
 External hosted runner results describe their CI product and settings. Only
 qualified internal ci-router samples can inform future routing starting estimates.
 Customer job history remains private and takes precedence over those estimates.
+
+## Qualifying another direct provider
+
+A route declaration is preparation, not proof of access or measured performance.
+Before enabling a paid route, verify repository-scoped runner access, publication
+terms, size/image eligibility, cache settings, and a bounded collection allowance.
+Account credits do not replace a spend limit. Include setup, teardown, startup fees,
+storage and retry exposure when bounding costs. Selecting a route or limiting
+parallel jobs is not a durable budget enforcement mechanism.
+
+The default dispatch selects only `github-hosted-4vcpu`, even after other routes
+are enabled. Explicit selection stays subject to the route's `enabled` flag.
+Jobs have a 15-minute timeout and at most one matrix job runs at a time.
+Only the explicit Depot 2-vCPU pilot is enabled alongside GitHub; other paid routes remain disabled.
+
+Tenki's prepared label and resources come from its
+[runner quickstart](https://tenki.cloud/docs/runners/quickstart) and
+[Linux runner documentation](https://tenki.cloud/docs/runners/x64-runners), checked
+2026-11-09. Sandbox credentials alone do not establish hosted Actions runner access.
+Tenki documents automatic caching; record the actual settings rather than describing
+all setup work as cold. No provider result is implied by these route declarations.
+
+Tenki's [Terms of Service, section 4.2(iv)](https://tenki.cloud/docs/terms-of-service.md)
+and [Acceptable Use Policy, section 3](https://tenki.cloud/docs/acceptable-use-policy.md),
+checked 2026-11-09, require prior written consent for publishing benchmark results
+and for the competing-service uses described there. Obtain and verify consent covering
+the intended benchmark and publication before executing this route. Account setup,
+runner access or credits do not establish that consent. The route remains disabled.
+
+Briq and CI Router provider/size/image routes require their own verified execution
+contract; no guessed hosted label is declared here. Direct-provider observations do
+not qualify routed integrations or substitute for their independent measurements.
+
+
+## Current external pilot
+
+Only the collection owner dispatches the paid pilot. Reserve $1 within the shared
+$2 external / $8 internal daily operational allocation ($10 total), retain uncertain
+costs, and allow no second job until the prior run is terminal and its native
+runner lifecycle is reconciled. Workflow concurrency serializes runs, but is not
+aggregate budget enforcement. The free GitHub baseline is scheduled; no paid
+schedule is enabled here and no plan purchase is authorized. Manual reruns need a
+new allocation and are not automatic.
+
+First cell: `route=depot-ubuntu-2vcpu`, `workload=node-typescript`, `repeats=1`.
+The job has a 15-minute timeout, one matrix cell and no fallback. Depot's published
+2-vCPU/8-GB runner rate is $0.006/minute (checked 2026-11-10 at
+https://depot.dev/docs/github-actions/runner-types), giving a $0.09 estimate for
+15 execution minutes before included minutes, rounding or other account charges.
+The timeout is not a mathematical billing cutoff. Record actual setup/work/job
+windows and fingerprint from GitHub; execution cost stays null unless known.
+This is an external native Depot runner, never an internal CI Router sample.

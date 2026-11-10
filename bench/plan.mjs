@@ -1,13 +1,18 @@
 // Builds the job matrix for the benchmark workflow. No dependencies.
 //
 // Reads routes.json and the workloads/ directory, takes the repeat count from
-// the REPEATS environment variable (never from the command line or a shell
-// string), and writes `matrix=<json>` to $GITHUB_OUTPUT (or stdout).
+// the REPEATS environment variable and an optional single route id from ROUTE
+// (never from the command line or a shell string), and writes `matrix=<json>` to $GITHUB_OUTPUT (or stdout).
+//
+// Scheduled runs are separate: they read schedule.json, which enrolls only the
+// free public GitHub baseline. Manual dispatch keeps its explicit route/workload
+// selection and is never widened by the schedule.
 import { appendFileSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const ID_RE = /^[a-z0-9][a-z0-9-]{0,62}$/;
+export const FREE_BASELINE_ROUTE = 'github-hosted-4vcpu';
 
 export function parseRepeats(value) {
   if (typeof value !== 'string' || !/^[0-9]{1,2}$/.test(value)) {
@@ -50,7 +55,10 @@ export function readRoutes(path) {
 
 /** Scheduled sampling is explicit: enabling a route for dispatch does not enroll it. */
 export function scheduledRoutes(routes, config) {
-  if (!config || !Array.isArray(config.routes) || config.routes.length === 0 ||
+  if (!config || config.program !== 'external') {
+    throw new Error('schedule.json: program must be "external"');
+  }
+  if (!Array.isArray(config.routes) || config.routes.length === 0 ||
       config.repeats !== 1 || new Set(config.routes).size !== config.routes.length) {
     throw new Error('schedule.json: unique route ids and exactly one repeat are required');
   }
@@ -58,25 +66,61 @@ export function scheduledRoutes(routes, config) {
     if (typeof id !== 'string' || !ID_RE.test(id)) throw new Error('schedule.json: invalid route id');
     const route = routes.find((r) => r.id === id);
     if (!route?.enabled) throw new Error(`schedule.json: unknown or disabled route ${id}`);
+    if (route.provider !== 'github' || route.id !== FREE_BASELINE_ROUTE) {
+      throw new Error(`schedule.json: ${id} is not the free public GitHub baseline`);
+    }
     return route;
   });
 }
 
-/** Conservative exposure for four scheduled passes; manual dispatch is separate. */
-export function assertScheduledBudget(routes, workloads, config) {
-  if (!Number.isFinite(config.dailyBudgetUsd) || config.dailyBudgetUsd < 0 || config.dailyBudgetUsd > 5) {
-    throw new Error('schedule.json: dailyBudgetUsd must be nonnegative and at most 5');
+/** The schedule pins the reviewed workload set; a new workload cannot enroll silently. */
+export function scheduledWorkloads(available, config) {
+  if (!Array.isArray(config.workloads) || config.workloads.length === 0 ||
+      new Set(config.workloads).size !== config.workloads.length) {
+    throw new Error('schedule.json: unique workload ids are required');
   }
-  let perPass = 0;
-  for (const route of routes) {
-    const cost = config.maxJobCostUsd?.[route.id];
-    if (!Number.isFinite(cost) || cost < 0 || (cost === 0 && route.id !== 'github-hosted-4vcpu')) {
-      throw new Error(`schedule.json: verified maximum job cost required for ${route.id}`);
+  for (const id of config.workloads) {
+    if (typeof id !== 'string' || !ID_RE.test(id) || !available.includes(id)) {
+      throw new Error(`schedule.json: unknown workload ${JSON.stringify(id)}`);
     }
-    perPass += cost * workloads.length;
   }
-  if (perPass * 4 > config.dailyBudgetUsd) throw new Error('scheduled daily exposure exceeds the budget');
-  return perPass * 4;
+  const reviewed = [...config.workloads].sort();
+  if (reviewed.length !== available.length || reviewed.some((id, i) => id !== available[i])) {
+    throw new Error('schedule.json: workloads must match the reviewed workload set');
+  }
+  return config.workloads;
+}
+
+/** A suite change must be reviewed with the schedule rather than applied silently. */
+export function assertScheduledSuite(config, suite) {
+  if (typeof suite !== 'string' || config.suite !== suite) {
+    throw new Error('schedule.json: suite must match suite.json');
+  }
+}
+
+/**
+ * The external schedule is free-only. This is an admission check, not a billing
+ * limiter: it rejects any paid route or nonzero execution charge instead of
+ * pretending to enforce a budget.
+ */
+export function assertScheduledFreeBaseline(routes, workloads, config) {
+  if (config.dailyBudgetUsd !== 0) {
+    throw new Error('schedule.json: the external schedule must be free ($0/day)');
+  }
+  if (workloads.length === 0) throw new Error('schedule.json: at least one workload is required');
+  const costIds = Object.keys(config.maxJobCostUsd ?? {});
+  if (costIds.length !== routes.length || costIds.some((id) => !routes.some((r) => r.id === id))) {
+    throw new Error('schedule.json: maxJobCostUsd must list exactly the scheduled routes');
+  }
+  for (const route of routes) {
+    if (route.provider !== 'github' || route.id !== FREE_BASELINE_ROUTE) {
+      throw new Error(`schedule.json: ${route.id} is not the free public GitHub baseline`);
+    }
+    if (config.maxJobCostUsd?.[route.id] !== 0) {
+      throw new Error(`schedule.json: ${route.id} must have a verified $0 execution charge`);
+    }
+  }
+  return 0;
 }
 
 /** Names of the directories under workloads/ that are valid workload ids. */
@@ -84,6 +128,29 @@ export function listWorkloads(dir) {
   return readdirSync(dir)
     .filter((name) => ID_RE.test(name) && statSync(join(dir, name)).isDirectory())
     .sort();
+}
+
+/** Default to the free baseline. Every other route must be selected explicitly. */
+export function selectRoutes(routes, only) {
+  if (only === undefined || only === '') only = FREE_BASELINE_ROUTE;
+  if (typeof only !== 'string' || !ID_RE.test(only)) throw new Error('route must be a route id');
+  const route = routes.find((r) => r.id === only);
+  if (!route) throw new Error(`route ${only} is not in routes.json`);
+  if (!route.enabled) throw new Error(`route ${only} is disabled`);
+  return [route];
+}
+
+export function selectWorkloads(routes, available, requested = 'all', repeats = 1) {
+  const paid = routes.some(r => r.provider !== 'github');
+  if (paid && repeats !== 1) throw new Error('paid pilot requires exactly one repetition');
+  if (requested === 'all') {
+    if (paid) throw new Error('paid pilot requires one explicit workload');
+    return available;
+  }
+  if (typeof requested !== 'string' || !ID_RE.test(requested) || !available.includes(requested)) {
+    throw new Error('workload must be an available workload id');
+  }
+  return [requested];
 }
 
 export function buildMatrix(routes, workloads, repeats) {
@@ -98,13 +165,25 @@ export function buildMatrix(routes, workloads, repeats) {
 
 function main() {
   const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
-  const scheduled = process.env.BENCHMARK_EVENT === 'schedule';
-  const config = scheduled ? JSON.parse(readFileSync(join(root, 'schedule.json'), 'utf8')) : null;
-  const repeats = scheduled ? 1 : parseRepeats(process.env.REPEATS ?? '1');
   const routes = readRoutes(join(root, 'routes.json'));
-  const selected = scheduled ? scheduledRoutes(routes, config) : routes;
-  const workloads = listWorkloads(join(root, 'workloads'));
-  if (scheduled) console.error(`scheduled daily exposure: $${assertScheduledBudget(selected, workloads, config).toFixed(2)}`);
+  const available = listWorkloads(join(root, 'workloads'));
+  const scheduled = process.env.BENCHMARK_EVENT === 'schedule';
+  let selected;
+  let workloads;
+  let repeats;
+  if (scheduled) {
+    const config = JSON.parse(readFileSync(join(root, 'schedule.json'), 'utf8'));
+    const suite = JSON.parse(readFileSync(join(root, 'suite.json'), 'utf8'));
+    assertScheduledSuite(config, suite.suite);
+    selected = scheduledRoutes(routes, config);
+    workloads = scheduledWorkloads(available, config);
+    repeats = config.repeats;
+    assertScheduledFreeBaseline(selected, workloads, config);
+  } else {
+    repeats = parseRepeats(process.env.REPEATS ?? '1');
+    selected = selectRoutes(routes, process.env.ROUTE ?? '');
+    workloads = selectWorkloads(selected, available, process.env.WORKLOAD ?? 'all', repeats);
+  }
   const matrix = buildMatrix(selected, workloads, repeats);
   if (matrix.include.length === 0) throw new Error('the matrix is empty: no enabled route or no workload');
   const line = `matrix=${JSON.stringify(matrix)}\n`;

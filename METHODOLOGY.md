@@ -3,7 +3,8 @@
 Suite version: see `suite.json`. Scores are only compared within one suite
 version. A change to any pin, toolchain or script makes a new one.
 
-Status: stage 1. One route, two workloads, no comparison published.
+Status: GitHub baseline collection plus a bounded native Depot 2-vCPU pilot.
+Two workloads are available; each paid pilot dispatch selects exactly one.
 
 ## Why this exists
 
@@ -105,8 +106,8 @@ A route is one way of getting a runner:
   are compared at 4 vCPUs. Smaller and larger sizes are published as raw numbers
   and are not scored.
 - **Providers with their own GitHub Actions integration**, using their own
-  labels. This measures what a customer gets from that provider directly. Not in
-  stage 1. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
+  labels. This measures what a customer gets from that provider directly. The
+  bounded Depot pilot is the currently enabled native integration. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
   declared in `routes.json` with `"enabled": false`: it is Ubicloud's own hosted
   runner, and it stays out of the dispatch matrix until the Ubicloud GitHub App
   is installed on the organization. Its `settings` object (`premiumCpu`,
@@ -291,14 +292,15 @@ cell whose coefficient of variation is above 15% is flagged as unstable.
   can behave differently.
 - The public hosted runner has more CPU than the private one most paying
   customers get.
-- With one route and a few runs, nothing here says anything about the spread of
-  results. Stage 1 exists to measure that.
+- With few runs per route, conclusions about the spread of results remain limited.
+  Repeated observations are retained to show that variation.
 
 ## Stages
 
-1. **Baseline:** this repository, two workloads, GitHub-hosted only. Proves the
-   harness and shows how noisy repeated runs are. No comparison is published.
-2. Other providers' own labels, once their terms are checked.
+1. **Baseline:** GitHub-hosted measurements established the two-workload harness
+   and recorded repeated-run variation.
+2. **Native provider pilots (current):** Depot 2-vCPU is enabled for explicit
+   one-workload, one-repeat jobs. Other native routes remain disabled.
 3. Router routes, once the router's checks for these runs are in place.
 4. The full suite, a schedule and a results page, after each provider's terms
    are checked for restrictions on publishing benchmarks.

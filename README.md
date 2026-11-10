@@ -42,7 +42,7 @@ yourself, fork it (below).
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
-| `routes.json` | The routes under test (free baseline enabled; other hosted routes disabled) |
+| `routes.json` | The routes under test (GitHub default; explicit one-job Depot 2-vCPU pilot enabled) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
 | `.github/workflows/benchmark.yml` | The benchmark, started by hand |
@@ -104,8 +104,8 @@ parallel jobs is not a durable budget enforcement mechanism.
 
 The default dispatch selects only `github-hosted-4vcpu`, even after other routes
 are enabled. Explicit selection stays subject to the route's `enabled` flag.
-Jobs have a 30-minute timeout and at most two matrix jobs run concurrently.
-Paid routes remain disabled until their collection controls are qualified.
+Jobs have a 15-minute timeout and at most one matrix job runs at a time.
+Only the explicit Depot 2-vCPU pilot is enabled alongside GitHub; other paid routes remain disabled.
 
 Tenki's prepared label and resources come from its
 [runner quickstart](https://tenki.cloud/docs/runners/quickstart) and

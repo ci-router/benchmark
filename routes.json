@@ -34,7 +34,7 @@
       "image": "ubuntu-24.04",
       "enabled": true,
       "hostedRunner": true,
-      "note": "Bounded external pilot only: native Depot App installation179933674 exists on ci-router; prior same-repository run42509881072 succeeded with this label. Select this route explicitly with one workload and one repetition. Current repository access/account admission is exercised by the pilot; no plan purchase or claim of hard billing cutoff. Retain a $1 operational allocation within the $2 external/$10 combined daily budget until terminal reconciliation. Other Depot sizes remain disabled."
+      "note": "Bounded external pilot only: native Depot App installation 179933674 exists on ci-router; prior same-repository run 42509881072 succeeded with this label. Select this route explicitly with one workload and one repetition. Current repository access/account admission is exercised by the pilot; no plan purchase or claim of hard billing cutoff. Retain a $1 operational allocation within the $2 external/$10 combined daily budget until terminal reconciliation. Other Depot sizes remain disabled."
     },
     {
       "id": "depot-ubuntu-4vcpu",

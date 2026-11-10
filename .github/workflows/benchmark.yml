@@ -65,7 +65,9 @@ jobs:
         run: node bench/plan.mjs
 
   run:
-    if: ${{ github.event_name != 'schedule' || github.run_attempt == 1 }}
+    # Paid jobs run only from main and only on the first attempt: a re-run of a
+    # paid dispatch would be a retry, and a branch dispatch's result is never collected.
+    if: ${{ github.ref == 'refs/heads/main' && github.run_attempt == 1 }}
     name: run ${{ matrix.route.id }} ${{ matrix.workload }} ${{ matrix.rep }}
     needs: plan
     runs-on: ${{ matrix.route.runsOn }}

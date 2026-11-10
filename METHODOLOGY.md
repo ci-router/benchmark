@@ -3,7 +3,8 @@
 Suite version: see `suite.json`. Scores are only compared within one suite
 version. A change to any pin, toolchain or script makes a new one.
 
-Status: GitHub baseline collection plus a bounded native Depot 2-vCPU pilot.
+Status: GitHub baseline collection plus bounded native Depot 2-vCPU and Boat
+default (4-vCPU) pilots.
 Two workloads are available; each paid pilot dispatch selects exactly one.
 
 ## Why this exists
@@ -157,13 +158,14 @@ A route is one way of getting a runner:
   `boat-4vcpu` (label `boat`, 4 vCPU, 8 GB) and `boat-2vcpu` (label
   `boat-small`, 2 vCPU, 4 GB) are prepared Boat CI runner routes. The Boat
   GitHub App was installed on 2026-11-08. A `boat-2vcpu` job (run 42802720019)
-  was refused for the $20/month plan; the owner started the plan on 2026-11-10.
+  was refused for the $20/month plan; the owner reported starting the plan on
+  2026-11-10.
   Only `boat-4vcpu` is now enabled, for two explicit jobs: one Node canary, then
   one Rust. The canary diagnoses repository/account/plan/public-job admission; a
   refusal is not a measurement. No subscription change is made by this suite. Boat runs each job in a fresh sandbox
   on shared vCPUs and does not promise a CPU model, so the CPU model each job
   reports matters more than usual when reading its numbers. `boat-4vcpu` is at
-  the reference size; `boat-2vcpu` is published as raw numbers and not scored.
+  the reference size; `boat-2vcpu` is disabled and has no measurement.
   Neither archives job logs.
 - **Router routes.** These come later. A router route can only be started from a
   manual or scheduled run on the default branch: the router refuses to place
@@ -365,8 +367,8 @@ label, image or size fail closed until reviewed. The baseline is pinned to
 
 The owner-approved operational allocation is $10/day combined ($2 external /
 $8 internal). This external schedule reserves $0/day. The $1 Depot allocation
-remains retained and the remaining $1 external headroom is reserved for one Boat
-small pilot. Together these consume the $2 external allocation; they are
+remains retained and the remaining $1 external headroom is reserved for the two
+`boat-4vcpu` pilot jobs. Together these consume the $2 external allocation; they are
 operational holds, not refunds or actual invoices. No paid schedule and no
 paid retry are authorized by this change. Scheduled reruns are skipped; a
 replacement sample needs a fresh explicit allocation and is not automatic.

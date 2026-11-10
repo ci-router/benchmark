@@ -149,8 +149,9 @@ label, image or size fail closed until reviewed. The baseline is pinned to
 
 The owner-approved operational allocation is $10/day combined ($2 external /
 $8 internal). This external schedule reserves $0/day. The $1 Depot allocation
-remains part of the external allocation for the explicit manual pilot; it is a
-retained allocation, not a refund or an actual invoice. No paid schedule and no
+remains part of the external allocation for the explicit manual pilot, and the
+remaining $1 external headroom is reserved for the two `boat-4vcpu` pilot jobs
+($2 external / $8 internal / $10 combined). These are retained allocations, not refunds or actual invoices. No paid schedule and no
 paid retry are authorized by this change. Scheduled reruns are skipped; a
 replacement sample needs a fresh explicit allocation and is not automatic.
 
@@ -221,7 +222,7 @@ This is an external native Depot runner, never an internal CI Router sample.
 ### Native Boat default pilot
 
 The earlier `boat-2vcpu` attempt (run 42802720019) was refused before any work:
-"CI on Boat VMs needs the $20/month plan or higher". The owner started the plan
+"CI on Boat VMs needs the $20/month plan or higher". The owner reported starting the plan
 on 2026-11-10. `boat-2vcpu` is disabled again and `boat-4vcpu` (label `boat`) is
 enabled for exactly two jobs: one `node-typescript` canary, then, if it measured
 cleanly, one `rust-analyzer`, each repeat `1`, serial, 15-minute job timeout,

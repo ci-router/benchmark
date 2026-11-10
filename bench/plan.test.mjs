@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildMatrix, parseRepeats, readRoutes, selectRoutes } from './plan.mjs';
+import { buildMatrix, parseRepeats, readRoutes, selectRoutes, selectWorkloads } from './plan.mjs';
 
 test('parseRepeats accepts 1 to 10 only', () => {
   assert.equal(parseRepeats('1'), 1);
@@ -60,7 +60,7 @@ test('the Depot route is declared with its own label and 2 vCPU / 8 GB', () => {
   assert.equal(depot.runsOn, 'depot-ubuntu-24.04');
   assert.equal(depot.vcpu, 2);
   assert.equal(depot.memoryGb, 8);
-  assert.throws(() => selectRoutes(routes, 'depot-ubuntu-2vcpu'), /disabled/);
+  assert.equal(selectRoutes(routes, 'depot-ubuntu-2vcpu')[0].id, depot.id);
 });
 
 test('the Boat routes are declared with their own labels and sizes', () => {
@@ -78,12 +78,12 @@ test('the Boat routes are declared with their own labels and sizes', () => {
 
 test('unqualified hosted routes remain disabled, including the documented Tenki configuration', () => {
   const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
-  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu']);
+  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu']);
   const tenki = routes.find((r) => r.id === 'tenki-hosted-4vcpu');
   assert.equal(tenki.runsOn, 'tenki-standard-medium-4c-8g');
   assert.equal(tenki.vcpu, 4);
   assert.equal(tenki.memoryGb, 8);
-  for (const route of routes.filter((r) => r.provider !== 'github')) {
+  for (const route of routes.filter((r) => !r.enabled)) {
     assert.throws(() => selectRoutes(routes, route.id), /disabled/);
   }
 });
@@ -91,4 +91,15 @@ test('unqualified hosted routes remain disabled, including the documented Tenki 
 test('missing or disabled baseline fails closed rather than selecting paid routes', () => {
   assert.throws(() => selectRoutes([{ id: 'paid', enabled: true }], ''), /not in routes.json/);
   assert.throws(() => selectRoutes([{ id: 'github-hosted-4vcpu', enabled: false }, { id: 'paid', enabled: true }], ''), /disabled/);
+});
+
+
+test('paid pilot requires exactly one explicit workload and one repetition', () => {
+  const paid = [{provider:'depot'}];
+  const workloads = ['node-typescript','rust-analyzer'];
+  assert.throws(() => selectWorkloads(paid,workloads,'all',1), /explicit workload/);
+  assert.throws(() => selectWorkloads(paid,workloads,'node-typescript',2), /one repetition/);
+  for (const bad of ['','x','$(id)','../node-typescript',null]) assert.throws(() => selectWorkloads(paid,workloads,bad,1), /workload/);
+  assert.deepEqual(selectWorkloads(paid,workloads,'node-typescript',1), ['node-typescript']);
+  assert.deepEqual(selectWorkloads([{provider:'github'}],workloads,'all',1), workloads);
 });

@@ -15,6 +15,19 @@ on:
         required: false
         default: ''
         type: string
+      workload:
+        description: One workload (required for paid pilots)
+        required: false
+        default: all
+        type: choice
+        options:
+          - all
+          - node-typescript
+          - rust-analyzer
+
+concurrency:
+  group: benchmark-${{ github.repository }}
+  cancel-in-progress: false
 
 permissions: {}
 
@@ -40,17 +53,18 @@ jobs:
         env:
           REPEATS: ${{ inputs.repeats }}
           ROUTE: ${{ inputs.route }}
+          WORKLOAD: ${{ inputs.workload }}
         run: node bench/plan.mjs
 
   run:
     name: run ${{ matrix.route.id }} ${{ matrix.workload }} ${{ matrix.rep }}
     needs: plan
     runs-on: ${{ matrix.route.runsOn }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     permissions: {}
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       WORKLOAD: ${{ matrix.workload }}

@@ -65,6 +65,19 @@ export function selectRoutes(routes, only) {
   return [route];
 }
 
+export function selectWorkloads(routes, available, requested = 'all', repeats = 1) {
+  const paid = routes.some(r => r.provider !== 'github');
+  if (paid && repeats !== 1) throw new Error('paid pilot requires exactly one repetition');
+  if (requested === 'all') {
+    if (paid) throw new Error('paid pilot requires one explicit workload');
+    return available;
+  }
+  if (typeof requested !== 'string' || !ID_RE.test(requested) || !available.includes(requested)) {
+    throw new Error('workload must be an available workload id');
+  }
+  return [requested];
+}
+
 export function buildMatrix(routes, workloads, repeats) {
   const include = [];
   for (const route of routes.filter((r) => r.enabled)) {
@@ -79,7 +92,8 @@ function main() {
   const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
   const repeats = parseRepeats(process.env.REPEATS ?? '1');
   const routes = selectRoutes(readRoutes(join(root, 'routes.json')), process.env.ROUTE ?? '');
-  const matrix = buildMatrix(routes, listWorkloads(join(root, 'workloads')), repeats);
+  const workloads = selectWorkloads(routes, listWorkloads(join(root, 'workloads')), process.env.WORKLOAD ?? 'all', repeats);
+  const matrix = buildMatrix(routes, workloads, repeats);
   if (matrix.include.length === 0) throw new Error('the matrix is empty: no enabled route or no workload');
   const line = `matrix=${JSON.stringify(matrix)}\n`;
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, line);

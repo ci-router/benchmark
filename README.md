@@ -5,10 +5,11 @@ different runners, with the duration, cost and reliability of each one.
 
 ## Status
 
-**Stage 1: baseline.** This repository holds two workloads and one enabled route,
-the GitHub-hosted 4-vCPU Ubuntu runner. Ubicloud, Depot, Boat and Tenki hosted
-runner configurations are prepared but disabled pending collection qualification. The point of this stage is to prove the
-harness and to see how noisy repeated runs are.
+**Bounded external collection.** The GitHub-hosted baseline is the default.
+Depot 2-vCPU is enabled only for explicit one-workload, one-repeat pilot dispatches.
+Other Depot sizes, Ubicloud, Boat and Tenki remain disabled. A prior successful
+same-repository Depot run and the installed native App establish the pilot basis;
+the new job still exercises current repository/account admission.
 
 **No comparison published yet.** There are no results on this page and none
 should be read into the numbers in a single run. Nothing is ranked.
@@ -41,7 +42,7 @@ yourself, fork it (below).
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
-| `routes.json` | The routes under test (free baseline enabled; other hosted routes disabled) |
+| `routes.json` | The routes under test (GitHub default; explicit one-job Depot 2-vCPU pilot enabled) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
 | `.github/workflows/benchmark.yml` | The benchmark, started by hand |
@@ -56,7 +57,8 @@ yourself, fork it (below).
 3. Run the `benchmark` workflow from the default branch with `workflow_dispatch`.
    The `repeats` input is an integer from 1 to 10 (default 1). The optional `route`
    input selects exactly one enabled route; empty selects only the free GitHub
-   baseline. There is no implicit run-all selection.
+   baseline. There is no implicit run-all selection. For a paid route, select one
+   explicit `workload` and `repeats=1`; `all` is rejected.
 4. Each job is named `run <route> <workload> <repeat>`. The `setup` and `work`
    steps are timed by GitHub, and the log shows exactly what ran.
 5. When the run is on the default branch, the `collect` job appends one row per
@@ -102,8 +104,8 @@ parallel jobs is not a durable budget enforcement mechanism.
 
 The default dispatch selects only `github-hosted-4vcpu`, even after other routes
 are enabled. Explicit selection stays subject to the route's `enabled` flag.
-Jobs have a 30-minute timeout and at most two matrix jobs run concurrently.
-Paid routes remain disabled until their collection controls are qualified.
+Jobs have a 15-minute timeout and at most one matrix job runs at a time.
+Only the explicit Depot 2-vCPU pilot is enabled alongside GitHub; other paid routes remain disabled.
 
 Tenki's prepared label and resources come from its
 [runner quickstart](https://tenki.cloud/docs/runners/quickstart) and
@@ -122,3 +124,22 @@ runner access or credits do not establish that consent. The route remains disabl
 Briq and CI Router provider/size/image routes require their own verified execution
 contract; no guessed hosted label is declared here. Direct-provider observations do
 not qualify routed integrations or substitute for their independent measurements.
+
+
+## Current external pilot
+
+Only the collection owner dispatches the paid pilot. Reserve $1 within the shared
+$2 external / $8 internal daily operational allocation ($10 total), retain uncertain
+costs, and allow no second job until the prior run is terminal and its native
+runner lifecycle is reconciled. Workflow concurrency serializes runs, but is not
+aggregate budget enforcement. No schedule is enabled here and no plan purchase
+is authorized. Manual reruns need a new allocation and are not automatic.
+
+First cell: `route=depot-ubuntu-2vcpu`, `workload=node-typescript`, `repeats=1`.
+The job has a 15-minute timeout, one matrix cell and no fallback. Depot's published
+2-vCPU/8-GB runner rate is $0.006/minute (checked 2026-11-10 at
+https://depot.dev/docs/github-actions/runner-types), giving a $0.09 estimate for
+15 execution minutes before included minutes, rounding or other account charges.
+The timeout is not a mathematical billing cutoff. Record actual setup/work/job
+windows and fingerprint from GitHub; execution cost stays null unless known.
+This is an external native Depot runner, never an internal CI Router sample.

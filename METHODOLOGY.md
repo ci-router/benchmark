@@ -3,7 +3,8 @@
 Suite version: see `suite.json`. Scores are only compared within one suite
 version. A change to any pin, toolchain or script makes a new one.
 
-Status: stage 1. One route, two workloads, no comparison published.
+Status: GitHub baseline collection plus a bounded native Depot 2-vCPU pilot.
+Two workloads are available; each paid pilot dispatch selects exactly one.
 
 ## Why this exists
 
@@ -105,8 +106,8 @@ A route is one way of getting a runner:
   are compared at 4 vCPUs. Smaller and larger sizes are published as raw numbers
   and are not scored.
 - **Providers with their own GitHub Actions integration**, using their own
-  labels. This measures what a customer gets from that provider directly. Not in
-  stage 1. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
+  labels. This measures what a customer gets from that provider directly. The
+  bounded Depot pilot is the currently enabled native integration. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
   declared in `routes.json` with `"enabled": false`: it is Ubicloud's own hosted
   runner, and it stays out of the dispatch matrix until the Ubicloud GitHub App
   is installed on the organization. Its `settings` object (`premiumCpu`,
@@ -114,13 +115,13 @@ A route is one way of getting a runner:
   the route is enabled; `null` means not recorded. Both may change speed, so a
   result must be read together with them.
   `depot-ubuntu-2vcpu` (label `depot-ubuntu-24.04`, 2 vCPU, 8 GB) is Depot's
-  own hosted runner, enabled once the Depot GitHub App was installed on
-  2026-11-08. At 2 vCPUs it is published as raw numbers and not scored, and its
+  own hosted runner. Its App was installed on 2026-11-08; the 2026-11-10
+  pilot enables only this size with one explicit workload and repetition. At 2 vCPUs it is published as raw numbers and not scored, and its
   job logs are not archived (`archiveLogs` is only set on the GitHub-hosted
-  baseline). A dispatch can run it alone with the `route` input.
+  baseline). A dispatch selects it with `route=depot-ubuntu-2vcpu` and an explicit `workload`.
   `boat-4vcpu` (label `boat`, 4 vCPU, 8 GB) and `boat-2vcpu` (label
-  `boat-small`, 2 vCPU, 4 GB) are Boat's own CI runners, enabled once the Boat
-  GitHub App was installed on 2026-11-08. Boat runs each job in a fresh sandbox
+  `boat-small`, 2 vCPU, 4 GB) are prepared Boat CI runner routes. The Boat
+  GitHub App was installed on 2026-11-08, but both routes remain disabled. Boat runs each job in a fresh sandbox
   on shared vCPUs and does not promise a CPU model, so the CPU model each job
   reports matters more than usual when reading its numbers. `boat-4vcpu` is at
   the reference size; `boat-2vcpu` is published as raw numbers and not scored.
@@ -291,14 +292,15 @@ cell whose coefficient of variation is above 15% is flagged as unstable.
   can behave differently.
 - The public hosted runner has more CPU than the private one most paying
   customers get.
-- With one route and a few runs, nothing here says anything about the spread of
-  results. Stage 1 exists to measure that.
+- With few runs per route, conclusions about the spread of results remain limited.
+  Repeated observations are retained to show that variation.
 
 ## Stages
 
-1. **Baseline:** this repository, two workloads, GitHub-hosted only. Proves the
-   harness and shows how noisy repeated runs are. No comparison is published.
-2. Other providers' own labels, once their terms are checked.
+1. **Baseline:** GitHub-hosted measurements established the two-workload harness
+   and recorded repeated-run variation.
+2. **Native provider pilots (current):** Depot 2-vCPU is enabled for explicit
+   one-workload, one-repeat jobs. Other native routes remain disabled.
 3. Router routes, once the router's checks for these runs are in place.
 4. The full suite, a schedule and a results page, after each provider's terms
    are checked for restrictions on publishing benchmarks.

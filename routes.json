@@ -32,9 +32,9 @@
       "vcpu": 2,
       "memoryGb": 8,
       "image": "ubuntu-24.04",
-      "enabled": false,
+      "enabled": true,
       "hostedRunner": true,
-      "note": "Collection disabled pending repository access, publication terms and bounded spend verification. Depot's own hosted runner (label depot-ubuntu-24.04: 2 vCPU, 8 GB, x86 on AWS EC2, $0.006 per minute per depot.dev/docs/github-actions/runner-types, read 2026-11-08), started through the Depot GitHub App the owner installed on 2026-11-08. Depot's Terms of Service (effective 2025-06-27) have no benchmark or comparison clause; B.4 asks customers to keep non-public information about the service confidential, so results record only what any job can observe."
+      "note": "Bounded external pilot only: native Depot App installation 179933674 exists on ci-router; prior same-repository run 42509881072 succeeded with this label. Select this route explicitly with one workload and one repetition. Current repository access/account admission is exercised by the pilot; no plan purchase or claim of hard billing cutoff. Retain a $1 operational allocation within the $2 external/$10 combined daily budget until terminal reconciliation. Other Depot sizes remain disabled."
     },
     {
       "id": "depot-ubuntu-4vcpu",

@@ -6,7 +6,7 @@ different runners, with the duration, cost and reliability of each one.
 ## Status
 
 **Bounded external collection.** The GitHub-hosted baseline is the default.
-Depot and Boat 2-vCPU routes are enabled only for explicit one-workload, one-repeat
+The Depot 2-vCPU route and Boat 2-vCPU route are enabled only for explicit one-workload, one-repeat
 pilot dispatches. Other sizes, Ubicloud and Tenki remain disabled. A prior successful
 same-repository Depot run and the installed native App establish the pilot basis;
 the new job still exercises current repository/account admission.

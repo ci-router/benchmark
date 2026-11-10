@@ -142,7 +142,7 @@ A route is one way of getting a runner:
   and are not scored.
 - **Providers with their own GitHub Actions integration**, using their own
   labels. This measures what a customer gets from that provider directly. The
-  bounded Depot pilot is the currently enabled native integration. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
+  bounded Depot and Boat small pilots are the currently enabled native integrations. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
   declared in `routes.json` with `"enabled": false`: it is Ubicloud's own hosted
   runner, and it stays out of the dispatch matrix until the Ubicloud GitHub App
   is installed on the organization. Its `settings` object (`premiumCpu`,
@@ -156,7 +156,10 @@ A route is one way of getting a runner:
   baseline). A dispatch selects it with `route=depot-ubuntu-2vcpu` and an explicit `workload`.
   `boat-4vcpu` (label `boat`, 4 vCPU, 8 GB) and `boat-2vcpu` (label
   `boat-small`, 2 vCPU, 4 GB) are prepared Boat CI runner routes. The Boat
-  GitHub App was installed on 2026-11-08, but both routes remain disabled. Boat runs each job in a fresh sandbox
+  GitHub App was installed on 2026-11-08. Only `boat-2vcpu` is enabled for one
+  explicit Node workload/repetition; `boat-4vcpu` remains disabled. The normal
+  job diagnoses current repository/account/plan/public-job admission; App
+  installation alone does not prove access. No subscription purchase is authorized. Boat runs each job in a fresh sandbox
   on shared vCPUs and does not promise a CPU model, so the CPU model each job
   reports matters more than usual when reading its numbers. `boat-4vcpu` is at
   the reference size; `boat-2vcpu` is published as raw numbers and not scored.
@@ -334,8 +337,8 @@ cell whose coefficient of variation is above 15% is flagged as unstable.
 
 1. **Baseline:** GitHub-hosted measurements established the two-workload harness
    and recorded repeated-run variation.
-2. **Native provider pilots (current):** Depot 2-vCPU is enabled for explicit
-   one-workload, one-repeat jobs. Other native routes remain disabled.
+2. **Native provider pilots (current):** Depot and Boat 2-vCPU pilots are enabled
+   for explicit one-workload, one-repeat jobs. Other native routes remain disabled.
 3. Router routes, once the router's checks for these runs are in place.
 4. The full suite, a schedule and a results page, after each provider's terms
    are checked for restrictions on publishing benchmarks.
@@ -361,8 +364,9 @@ label, image or size fail closed until reviewed. The baseline is pinned to
 
 The owner-approved operational allocation is $10/day combined ($2 external /
 $8 internal). This external schedule reserves $0/day. The $1 Depot allocation
-remains part of the external allocation for the explicit manual pilot; it is a
-retained allocation, not a refund or an actual invoice. No paid schedule and no
+remains retained and the remaining $1 external headroom is reserved for one Boat
+small pilot. Together these consume the $2 external allocation; they are
+operational holds, not refunds or actual invoices. No paid schedule and no
 paid retry are authorized by this change. Scheduled reruns are skipped; a
 replacement sample needs a fresh explicit allocation and is not automatic.
 

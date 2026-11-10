@@ -1,0 +1,15 @@
+{
+  "repo": "ci-router/benchmark",
+  "runId": 42864748180,
+  "attempt": 1,
+  "headSha": "7814cb053678c9c8b5b62fe725845cd84f225269",
+  "jobs": [
+    {
+      "jobId": 130000089089,
+      "name": "run boat-4vcpu rust-analyzer 1",
+      "route": "boat-4vcpu",
+      "archived": false,
+      "reason": "route-not-enabled"
+    }
+  ]
+}

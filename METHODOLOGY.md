@@ -114,13 +114,13 @@ A route is one way of getting a runner:
   the route is enabled; `null` means not recorded. Both may change speed, so a
   result must be read together with them.
   `depot-ubuntu-2vcpu` (label `depot-ubuntu-24.04`, 2 vCPU, 8 GB) is Depot's
-  own hosted runner, enabled once the Depot GitHub App was installed on
-  2026-11-08. At 2 vCPUs it is published as raw numbers and not scored, and its
+  own hosted runner. Its App was installed on 2026-11-08; the 2026-11-10
+  pilot enables only this size with one explicit workload and repetition. At 2 vCPUs it is published as raw numbers and not scored, and its
   job logs are not archived (`archiveLogs` is only set on the GitHub-hosted
-  baseline). A dispatch can run it alone with the `route` input.
+  baseline). A dispatch selects it with `route=depot-ubuntu-2vcpu` and an explicit `workload`.
   `boat-4vcpu` (label `boat`, 4 vCPU, 8 GB) and `boat-2vcpu` (label
-  `boat-small`, 2 vCPU, 4 GB) are Boat's own CI runners, enabled once the Boat
-  GitHub App was installed on 2026-11-08. Boat runs each job in a fresh sandbox
+  `boat-small`, 2 vCPU, 4 GB) are prepared Boat CI runner routes. The Boat
+  GitHub App was installed on 2026-11-08, but both routes remain disabled. Boat runs each job in a fresh sandbox
   on shared vCPUs and does not promise a CPU model, so the CPU model each job
   reports matters more than usual when reading its numbers. `boat-4vcpu` is at
   the reference size; `boat-2vcpu` is published as raw numbers and not scored.

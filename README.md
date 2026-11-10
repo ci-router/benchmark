@@ -6,7 +6,7 @@ different runners, with the duration, cost and reliability of each one.
 ## Status
 
 **Bounded external collection.** The GitHub-hosted baseline is the default.
-The Depot 2-vCPU route and Boat 2-vCPU route are enabled only for explicit one-workload, one-repeat
+The Depot 2-vCPU route and Boat 4-vCPU (default) route are enabled only for explicit one-workload, one-repeat
 pilot dispatches. Other sizes, Ubicloud and Tenki remain disabled. A prior successful
 same-repository Depot run and the installed native App establish the pilot basis;
 the new job still exercises current repository/account admission.
@@ -77,7 +77,7 @@ yourself, fork it (below).
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
-| `routes.json` | The routes under test (GitHub default; explicit one-job Depot and Boat 2-vCPU pilots enabled) |
+| `routes.json` | The routes under test (GitHub default; explicit one-job Depot 2-vCPU and Boat 4-vCPU pilots enabled) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
 | `.github/workflows/benchmark.yml` | The benchmark, manual or scheduled |
@@ -149,8 +149,9 @@ label, image or size fail closed until reviewed. The baseline is pinned to
 
 The owner-approved operational allocation is $10/day combined ($2 external /
 $8 internal). This external schedule reserves $0/day. The $1 Depot allocation
-remains part of the external allocation for the explicit manual pilot; it is a
-retained allocation, not a refund or an actual invoice. No paid schedule and no
+remains part of the external allocation for the explicit manual pilot, and the
+remaining $1 external headroom is reserved for the two `boat-4vcpu` pilot jobs
+($2 external / $8 internal / $10 combined). These are retained allocations, not refunds or actual invoices. No paid schedule and no
 paid retry are authorized by this change. Scheduled reruns are skipped; a
 replacement sample needs a fresh explicit allocation and is not automatic.
 
@@ -178,7 +179,7 @@ parallel jobs is not a durable budget enforcement mechanism.
 The default dispatch selects only `github-hosted-4vcpu`, even after other routes
 are enabled. Explicit selection stays subject to the route's `enabled` flag.
 Jobs have a 15-minute timeout and at most one matrix job runs at a time.
-The explicit Depot and Boat 2-vCPU pilots are enabled alongside GitHub; other paid routes remain disabled. Each paid route still requires one explicit workload and one repetition.
+The explicit Depot 2-vCPU and Boat 4-vCPU pilots are enabled alongside GitHub; other paid routes remain disabled. Each paid route still requires one explicit workload and one repetition.
 
 Tenki's prepared label and resources come from its
 [runner quickstart](https://tenki.cloud/docs/runners/quickstart) and
@@ -218,18 +219,18 @@ The timeout is not a mathematical billing cutoff. Record actual setup/work/job
 windows and fingerprint from GitHub; execution cost stays null unless known.
 This is an external native Depot runner, never an internal CI Router sample.
 
-### Single native Boat pilot
+### Native Boat default pilot
 
-One `boat-2vcpu` / `node-typescript` / repeat `1` attempt uses the installed
-Boat App with `boat-small`, a 15-minute job timeout and global serialization.
-The normal job diagnoses repository selection, account linkage, existing plan
-and public-job opt-in. Installation alone does not prove these capabilities.
-No new subscription or retry is authorized by this source change. A refused
-or unassigned job is not a measurement.
+The earlier `boat-2vcpu` attempt (run 42802720019) was refused before any work:
+"CI on Boat VMs needs the $20/month plan or higher". The owner reported starting the plan
+on 2026-11-10. `boat-2vcpu` is disabled again and `boat-4vcpu` (label `boat`) is
+enabled for exactly two jobs: one `node-typescript` canary, then, if it measured
+cleanly, one `rust-analyzer`, each repeat `1`, serial, 15-minute job timeout,
+no retry. A refused, unassigned or ambiguous job is not a measurement and stops
+the pilot.
 
-Retain the remaining $1 external operational allocation for this attempt,
-alongside the existing $1 Depot hold ($2 external / $8 internal / $10 combined).
-The published small rate is $0.018/hour: 15 minutes estimates $0.0045 of machine
-time, plus up to $0.07 for an extra start. This is an estimate, not an observed
-charge or guaranteed billing cutoff. Native Boat owns sandbox teardown.
+The published default rate is $0.036/hour billed per second: a 15-minute job
+estimates at most $0.009 of machine time, plus up to $0.07 for an extra start.
+This is an estimate, not an observed charge or a guaranteed billing cutoff.
+Native Boat owns sandbox teardown. No subscription is started or changed here.
 The six-hour schedule remains the free GitHub baseline only.

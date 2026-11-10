@@ -92,7 +92,7 @@ test('the Boat routes are declared with their own labels and sizes', () => {
 
 test('unqualified hosted routes remain disabled, including the documented Tenki configuration', () => {
   const routes = readRoutes(join(root, 'routes.json'));
-  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'boat-2vcpu']);
+  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'boat-4vcpu']);
   const tenki = routes.find((r) => r.id === 'tenki-hosted-4vcpu');
   assert.equal(tenki.runsOn, 'tenki-standard-medium-4c-8g');
   assert.equal(tenki.vcpu, 4);

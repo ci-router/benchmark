@@ -10,6 +10,11 @@ on:
         required: false
         default: '1'
         type: string
+      route:
+        description: One enabled route id (empty selects the free GitHub baseline)
+        required: false
+        default: ''
+        type: string
 
 permissions: {}
 
@@ -34,6 +39,7 @@ jobs:
         id: matrix
         env:
           REPEATS: ${{ inputs.repeats }}
+          ROUTE: ${{ inputs.route }}
         run: node bench/plan.mjs
 
   run:
@@ -44,6 +50,7 @@ jobs:
     permissions: {}
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       WORKLOAD: ${{ matrix.workload }}

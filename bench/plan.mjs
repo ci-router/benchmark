@@ -1,8 +1,8 @@
 // Builds the job matrix for the benchmark workflow. No dependencies.
 //
 // Reads routes.json and the workloads/ directory, takes the repeat count from
-// the REPEATS environment variable (never from the command line or a shell
-// string), and writes `matrix=<json>` to $GITHUB_OUTPUT (or stdout).
+// the REPEATS environment variable and an optional single route id from ROUTE
+// (never from the command line or a shell string), and writes `matrix=<json>` to $GITHUB_OUTPUT (or stdout).
 import { appendFileSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -55,6 +55,16 @@ export function listWorkloads(dir) {
     .sort();
 }
 
+/** Default to the free baseline. Every other route must be selected explicitly. */
+export function selectRoutes(routes, only) {
+  if (only === undefined || only === '') only = 'github-hosted-4vcpu';
+  if (typeof only !== 'string' || !ID_RE.test(only)) throw new Error('route must be a route id');
+  const route = routes.find((r) => r.id === only);
+  if (!route) throw new Error(`route ${only} is not in routes.json`);
+  if (!route.enabled) throw new Error(`route ${only} is disabled`);
+  return [route];
+}
+
 export function buildMatrix(routes, workloads, repeats) {
   const include = [];
   for (const route of routes.filter((r) => r.enabled)) {
@@ -68,7 +78,8 @@ export function buildMatrix(routes, workloads, repeats) {
 function main() {
   const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
   const repeats = parseRepeats(process.env.REPEATS ?? '1');
-  const matrix = buildMatrix(readRoutes(join(root, 'routes.json')), listWorkloads(join(root, 'workloads')), repeats);
+  const routes = selectRoutes(readRoutes(join(root, 'routes.json')), process.env.ROUTE ?? '');
+  const matrix = buildMatrix(routes, listWorkloads(join(root, 'workloads')), repeats);
   if (matrix.include.length === 0) throw new Error('the matrix is empty: no enabled route or no workload');
   const line = `matrix=${JSON.stringify(matrix)}\n`;
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, line);

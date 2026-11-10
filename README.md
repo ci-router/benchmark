@@ -178,7 +178,7 @@ parallel jobs is not a durable budget enforcement mechanism.
 The default dispatch selects only `github-hosted-4vcpu`, even after other routes
 are enabled. Explicit selection stays subject to the route's `enabled` flag.
 Jobs have a 15-minute timeout and at most one matrix job runs at a time.
-Only the explicit Depot 2-vCPU pilot is enabled alongside GitHub; other paid routes remain disabled.
+The explicit Depot and Boat 2-vCPU pilots are enabled alongside GitHub; other paid routes remain disabled. Each paid route still requires one explicit workload and one repetition.
 
 Tenki's prepared label and resources come from its
 [runner quickstart](https://tenki.cloud/docs/runners/quickstart) and
@@ -217,3 +217,19 @@ https://depot.dev/docs/github-actions/runner-types), giving a $0.09 estimate for
 The timeout is not a mathematical billing cutoff. Record actual setup/work/job
 windows and fingerprint from GitHub; execution cost stays null unless known.
 This is an external native Depot runner, never an internal CI Router sample.
+
+### Single native Boat pilot
+
+One `boat-2vcpu` / `node-typescript` / repeat `1` attempt uses the installed
+Boat App with `boat-small`, a 15-minute job timeout and global serialization.
+The normal job diagnoses repository selection, account linkage, existing plan
+and public-job opt-in. Installation alone does not prove these capabilities.
+No new subscription or retry is authorized by this source change. A refused
+or unassigned job is not a measurement.
+
+Retain the remaining $1 external operational allocation for this attempt,
+alongside the existing $1 Depot hold ($2 external / $8 internal / $10 combined).
+The published small rate is $0.018/hour: 15 minutes estimates $0.0045 of machine
+time, plus up to $0.07 for an extra start. This is an estimate, not an observed
+charge or guaranteed billing cutoff. Native Boat owns sandbox teardown.
+The six-hour schedule remains the free GitHub baseline only.

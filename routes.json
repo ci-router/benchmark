@@ -65,9 +65,9 @@
       "vcpu": 2,
       "memoryGb": 4,
       "image": "ubuntu",
-      "enabled": false,
+      "enabled": true,
       "hostedRunner": true,
-      "note": "Collection disabled pending repository access, publication terms and bounded spend verification. Label boat-small (2 vCPU, 4 GB, 51 GB disk, $0.018 per hour). Boat's own CI runner (docs.boat.dev/ci and docs.boat.dev/pricing.md, read 2026-11-08): a fresh sandbox per job on shared vCPUs, no promised CPU model, billed per second, CI needs Boat's $20/month plan, extra starts above the plan's included ones cost $0.03 to $0.07. The docs do not name the Ubuntu release, so the image is what the job reports. Boat refuses jobs from public repositories until the account owner runs `boat ci public <account> on`. Boat's terms (boat.dev/terms, effective 2026-10-12) have no benchmark, comparison or confidentiality clause about Boat; TOS-10 forbids probing or evading usage limits and metering, which this suite does not do."
+      "note": "Bounded external native Boat pilot only. Boat CI App179935506 is installed and unsuspended on ci-router; repository selection, linked account, existing paid-plan eligibility and public-job opt-in are diagnosed by ONE normal native job, not inferred from installation. Select one Node workload/repetition,15-minute timeout; retain $1 operational allocation within remaining $2external/$10combined budget. No subscription purchase, retry or paid recurrence. Native App owns lifecycle; do not assert a hard billing cutoff. Label boat-small:2vCPU/4GB,$0.018/hour per docs.boat.dev/ci.md and pricing.md checked2026-11-10; extra start may add up to$0.07. Other Boat sizes remain disabled."
     },
     {
       "id": "tenki-hosted-4vcpu",

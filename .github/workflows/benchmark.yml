@@ -1,8 +1,11 @@
 name: benchmark
 
-# Manual runs only. There is no schedule yet and no pull_request trigger, on
-# purpose: a pull request must never be able to start a benchmark job.
+# Scheduled runs use an explicit free-baseline allowlist; manual runs retain
+# their route/workload selection. No pull_request trigger: a pull request must
+# never start a benchmark job.
 on:
+  schedule:
+    - cron: '23 */6 * * *'
   workflow_dispatch:
     inputs:
       repeats:
@@ -25,14 +28,16 @@ on:
           - node-typescript
           - rust-analyzer
 
+permissions: {}
+
+# Keep collection/publishing serialized; never cancel an attempt to improve statistics.
 concurrency:
   group: benchmark-${{ github.repository }}
   cancel-in-progress: false
 
-permissions: {}
-
 jobs:
   plan:
+    if: ${{ github.event_name != 'schedule' || (github.repository == 'ci-router/benchmark' && github.ref == 'refs/heads/main' && github.event.repository.private == false && github.run_attempt == 1) }}
     name: plan
     runs-on: ubuntu-24.04
     permissions: {}
@@ -48,15 +53,19 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22.23.4'
+      - name: validate benchmark scripts
+        run: node --test bench/*.test.mjs
       - name: matrix
         id: matrix
         env:
-          REPEATS: ${{ inputs.repeats }}
+          REPEATS: ${{ inputs.repeats || '1' }}
           ROUTE: ${{ inputs.route }}
           WORKLOAD: ${{ inputs.workload }}
+          BENCHMARK_EVENT: ${{ github.event_name }}
         run: node bench/plan.mjs
 
   run:
+    if: ${{ github.event_name != 'schedule' || github.run_attempt == 1 }}
     name: run ${{ matrix.route.id }} ${{ matrix.workload }} ${{ matrix.rep }}
     needs: plan
     runs-on: ${{ matrix.route.runsOn }}
@@ -90,8 +99,8 @@ jobs:
 
   collect:
     name: collect
-    needs: run
-    if: ${{ always() && github.ref == 'refs/heads/main' }}
+    needs: [plan, run]
+    if: ${{ always() && needs.plan.result == 'success' && github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || github.run_attempt == 1) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

@@ -1,0 +1,16 @@
+{
+  "program": "external",
+  "suite": "0.2.0",
+  "routes": [
+    "github-hosted-4vcpu"
+  ],
+  "workloads": [
+    "node-typescript",
+    "rust-analyzer"
+  ],
+  "repeats": 1,
+  "dailyBudgetUsd": 0,
+  "maxJobCostUsd": {
+    "github-hosted-4vcpu": 0
+  }
+}

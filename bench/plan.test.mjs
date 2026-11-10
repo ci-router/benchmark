@@ -1,8 +1,23 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildMatrix, parseRepeats, readRoutes, selectRoutes, selectWorkloads } from './plan.mjs';
+import {
+  assertScheduledFreeBaseline,
+  assertScheduledSuite,
+  buildMatrix,
+  listWorkloads,
+  parseRepeats,
+  readRoutes,
+  scheduledRoutes,
+  scheduledWorkloads,
+  selectRoutes,
+  selectWorkloads,
+} from './plan.mjs';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const baseline = { id: 'github-hosted-4vcpu', provider: 'github', enabled: true, runsOn: 'ubuntu-24.04', image: 'ubuntu-24.04', vcpu: 4, memoryGb: 16 };
 
 test('parseRepeats accepts 1 to 10 only', () => {
   assert.equal(parseRepeats('1'), 1);
@@ -24,13 +39,13 @@ test('buildMatrix uses enabled routes only, every workload and every repeat', ()
 });
 
 test('readRoutes tolerates the archiveLogs field', () => {
-  const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
+  const routes = readRoutes(join(root, 'routes.json'));
   assert.ok(routes.length >= 1);
   assert.ok(routes.every((r) => !('archiveLogs' in r)), 'the matrix does not carry archive settings');
 });
 
 test('the Ubicloud hosted runner is declared but disabled, and stays out of the matrix', () => {
-  const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
+  const routes = readRoutes(join(root, 'routes.json'));
   const ubicloud = routes.find((r) => r.id === 'ubicloud-hosted-4vcpu');
   assert.ok(ubicloud);
   assert.equal(ubicloud.runsOn, 'ubicloud-standard-4-ubuntu-2404');
@@ -54,7 +69,7 @@ test('selectRoutes: default is only the free baseline; explicit selection cannot
 });
 
 test('the Depot route is declared with its own label and 2 vCPU / 8 GB', () => {
-  const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
+  const routes = readRoutes(join(root, 'routes.json'));
   const depot = routes.find((r) => r.id === 'depot-ubuntu-2vcpu');
   assert.ok(depot);
   assert.equal(depot.runsOn, 'depot-ubuntu-24.04');
@@ -64,7 +79,7 @@ test('the Depot route is declared with its own label and 2 vCPU / 8 GB', () => {
 });
 
 test('the Boat routes are declared with their own labels and sizes', () => {
-  const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
+  const routes = readRoutes(join(root, 'routes.json'));
   const four = routes.find((r) => r.id === 'boat-4vcpu');
   const two = routes.find((r) => r.id === 'boat-2vcpu');
   assert.ok(four && two);
@@ -75,9 +90,8 @@ test('the Boat routes are declared with their own labels and sizes', () => {
   assert.ok(!four.archiveLogs && !two.archiveLogs);
 });
 
-
 test('unqualified hosted routes remain disabled, including the documented Tenki configuration', () => {
-  const routes = readRoutes(join(dirname(fileURLToPath(import.meta.url)), '..', 'routes.json'));
+  const routes = readRoutes(join(root, 'routes.json'));
   assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu']);
   const tenki = routes.find((r) => r.id === 'tenki-hosted-4vcpu');
   assert.equal(tenki.runsOn, 'tenki-standard-medium-4c-8g');
@@ -93,13 +107,111 @@ test('missing or disabled baseline fails closed rather than selecting paid route
   assert.throws(() => selectRoutes([{ id: 'github-hosted-4vcpu', enabled: false }, { id: 'paid', enabled: true }], ''), /disabled/);
 });
 
-
 test('paid pilot requires exactly one explicit workload and one repetition', () => {
-  const paid = [{provider:'depot'}];
-  const workloads = ['node-typescript','rust-analyzer'];
-  assert.throws(() => selectWorkloads(paid,workloads,'all',1), /explicit workload/);
-  assert.throws(() => selectWorkloads(paid,workloads,'node-typescript',2), /one repetition/);
-  for (const bad of ['','x','$(id)','../node-typescript',null]) assert.throws(() => selectWorkloads(paid,workloads,bad,1), /workload/);
-  assert.deepEqual(selectWorkloads(paid,workloads,'node-typescript',1), ['node-typescript']);
-  assert.deepEqual(selectWorkloads([{provider:'github'}],workloads,'all',1), workloads);
+  const paid = [{ provider: 'depot' }];
+  const workloads = ['node-typescript', 'rust-analyzer'];
+  assert.throws(() => selectWorkloads(paid, workloads, 'all', 1), /explicit workload/);
+  assert.throws(() => selectWorkloads(paid, workloads, 'node-typescript', 2), /one repetition/);
+  for (const bad of ['', 'x', '$(id)', '../node-typescript', null]) assert.throws(() => selectWorkloads(paid, workloads, bad, 1), /workload/);
+  assert.deepEqual(selectWorkloads(paid, workloads, 'node-typescript', 1), ['node-typescript']);
+  assert.deepEqual(selectWorkloads([{ provider: 'github' }], workloads, 'all', 1), workloads);
+});
+
+test('scheduled sampling never enrolls a newly enabled paid route implicitly', () => {
+  const routes = [{ ...baseline }, { id: 'paid', provider: 'depot', enabled: true }];
+  const selected = scheduledRoutes(routes, { program: 'external', routes: ['github-hosted-4vcpu'], repeats: 1 });
+  assert.deepEqual(selected, [routes[0]]);
+  assert.equal(buildMatrix(selected, ['node', 'rust'], 1).include.length, 2);
+});
+
+test('scheduled sampling rejects disabled, unknown, duplicate and invalid routes or repeats', () => {
+  const routes = [{ ...baseline }, { id: 'disabled', provider: 'github', enabled: false }];
+  for (const config of [null, {}, { program: 'external', routes: [], repeats: 1 },
+    { program: 'external', routes: ['disabled'], repeats: 1 }, { program: 'external', routes: ['missing'], repeats: 1 },
+    { program: 'external', routes: ['github-hosted-4vcpu', 'github-hosted-4vcpu'], repeats: 1 },
+    { program: 'external', routes: ['$(id)'], repeats: 1 },
+    { program: 'external', routes: ['github-hosted-4vcpu'], repeats: 2 },
+    { program: 'external', routes: ['github-hosted-4vcpu'], repeats: '1' }]) {
+    assert.throws(() => scheduledRoutes(routes, config), /schedule.json/);
+  }
+});
+
+test('scheduled sampling rejects non-external programs and every paid or non-GitHub route', () => {
+  const routes = [
+    { ...baseline },
+    { id: 'depot-ubuntu-2vcpu', provider: 'depot', enabled: true },
+    { id: 'other-github', provider: 'github', enabled: true },
+  ];
+  assert.throws(() => scheduledRoutes(routes, { program: 'internal', routes: ['github-hosted-4vcpu'], repeats: 1 }), /program/);
+  assert.throws(() => scheduledRoutes(routes, { program: 'external', routes: ['depot-ubuntu-2vcpu'], repeats: 1 }), /free public GitHub baseline/);
+  assert.throws(() => scheduledRoutes(routes, { program: 'external', routes: ['other-github'], repeats: 1 }), /free public GitHub baseline/);
+});
+
+test('scheduled workloads are pinned to the reviewed set', () => {
+  const available = ['node-typescript', 'rust-analyzer'];
+  const config = { workloads: ['node-typescript', 'rust-analyzer'] };
+  assert.deepEqual(scheduledWorkloads(available, config), available);
+  assert.throws(() => scheduledWorkloads([...available, 'go'], config), /reviewed workload set/);
+  assert.throws(() => scheduledWorkloads(available, { workloads: ['node-typescript'] }), /reviewed workload set/);
+  assert.throws(() => scheduledWorkloads(available, { workloads: ['node-typescript', 'node-typescript'] }), /unique workload/);
+  assert.throws(() => scheduledWorkloads(available, { workloads: ['node-typescript', 'missing'] }), /unknown workload/);
+});
+
+test('scheduled suite must match suite.json', () => {
+  assert.doesNotThrow(() => assertScheduledSuite({ suite: '0.2.0' }, '0.2.0'));
+  assert.throws(() => assertScheduledSuite({ suite: '0.1.0' }, '0.2.0'), /suite/);
+  assert.throws(() => assertScheduledSuite({}, '0.2.0'), /suite/);
+});
+
+test('the external schedule is free-only and rejects paid enrollment metadata', () => {
+  const routes = [{ ...baseline }];
+  const workloads = ['node-typescript', 'rust-analyzer'];
+  const config = { dailyBudgetUsd: 0, maxJobCostUsd: { 'github-hosted-4vcpu': 0 } };
+  assert.equal(assertScheduledFreeBaseline(routes, workloads, config), 0);
+  assert.throws(() => assertScheduledFreeBaseline(routes, workloads, { ...config, dailyBudgetUsd: 1 }), /free/);
+  assert.throws(() => assertScheduledFreeBaseline(routes, workloads, { ...config, maxJobCostUsd: { 'github-hosted-4vcpu': 0.01 } }), /execution charge/);
+  assert.throws(() => assertScheduledFreeBaseline(routes, workloads, { ...config, maxJobCostUsd: { 'github-hosted-4vcpu': 0, paid: 0 } }), /exactly the scheduled routes/);
+  assert.throws(() => assertScheduledFreeBaseline([{ id: 'depot-ubuntu-2vcpu', provider: 'depot' }], workloads, {
+    ...config, maxJobCostUsd: { 'depot-ubuntu-2vcpu': 0 },
+  }), /free public GitHub baseline/);
+});
+
+test('scheduled baseline rejects paid runner labels and sample shape drift', () => {
+  const config = { program: 'external', routes: [baseline.id], repeats: 1,
+    dailyBudgetUsd: 0, maxJobCostUsd: { [baseline.id]: 0 } };
+  for (const change of [
+    { runsOn: 'depot-ubuntu-24.04' }, { runsOn: 'ubuntu-latest' },
+    { runsOn: undefined }, { image: 'ubuntu-22.04' }, { vcpu: 8 }, { memoryGb: 32 },
+  ]) {
+    const routes = [{ ...baseline, ...change }];
+    assert.throws(() => scheduledRoutes(routes, config), /reviewed free public GitHub baseline/);
+    assert.throws(() => assertScheduledFreeBaseline(routes, ['node-typescript'], config), /reviewed free public GitHub baseline/);
+  }
+});
+
+test('the committed schedule validates against the committed routes, workloads and suite', () => {
+  const routes = readRoutes(join(root, 'routes.json'));
+  const available = listWorkloads(join(root, 'workloads'));
+  const config = JSON.parse(readFileSync(join(root, 'schedule.json'), 'utf8'));
+  const suite = JSON.parse(readFileSync(join(root, 'suite.json'), 'utf8'));
+  assert.equal(config.program, 'external');
+  assertScheduledSuite(config, suite.suite);
+  const selected = scheduledRoutes(routes, config);
+  assert.deepEqual(selected, [baseline]);
+  const workloads = scheduledWorkloads(available, config);
+  assert.deepEqual(workloads, ['node-typescript', 'rust-analyzer']);
+  assert.equal(assertScheduledFreeBaseline(selected, workloads, config), 0);
+  const matrix = buildMatrix(selected, workloads, config.repeats);
+  assert.equal(matrix.include.length, 2);
+  assert.ok(matrix.include.every((j) => j.route.id === 'github-hosted-4vcpu'));
+});
+
+test('default manual dispatch stays on the free baseline and does not enroll Depot', () => {
+  const routes = readRoutes(join(root, 'routes.json'));
+  const available = listWorkloads(join(root, 'workloads'));
+  const selected = selectRoutes(routes, '');
+  const workloads = selectWorkloads(selected, available, 'all', 1);
+  const matrix = buildMatrix(selected, workloads, 1);
+  assert.equal(matrix.include.length, 2);
+  assert.ok(matrix.include.every((j) => j.route.id === 'github-hosted-4vcpu'));
 });

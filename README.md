@@ -6,8 +6,8 @@ different runners, with the duration, cost and reliability of each one.
 ## Status
 
 **Bounded external collection.** The GitHub-hosted baseline is the default.
-Depot 2-vCPU is enabled only for explicit one-workload, one-repeat pilot dispatches.
-Other Depot sizes, Ubicloud, Boat and Tenki remain disabled. A prior successful
+Depot and Boat 2-vCPU routes are enabled only for explicit one-workload, one-repeat
+pilot dispatches. Other sizes, Ubicloud and Tenki remain disabled. A prior successful
 same-repository Depot run and the installed native App establish the pilot basis;
 the new job still exercises current repository/account admission.
 
@@ -77,7 +77,7 @@ yourself, fork it (below).
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
-| `routes.json` | The routes under test (GitHub default; explicit one-job Depot 2-vCPU pilot enabled) |
+| `routes.json` | The routes under test (GitHub default; explicit one-job Depot and Boat 2-vCPU pilots enabled) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
 | `.github/workflows/benchmark.yml` | The benchmark, manual or scheduled |

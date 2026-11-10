@@ -167,7 +167,7 @@ test('buildRows builds the artifact path from validated parts only', () => {
     paths.push(p);
     return null;
   });
-  assert.deepEqual(paths, [join('art', 'fingerprint-2-github-hosted-4vcpu-rust-analyzer-1', 'fingerprint.json')]);
+  assert.deepEqual(paths, [join('art', 'fingerprint-2-github-hosted-4vcpu-rust-analyzer-1', 'fingerprint.json'), join('art', 'fingerprint.json')]);
 });
 
 test('sanitizeFingerprint keeps known fields with the right types', () => {
@@ -295,4 +295,27 @@ test('readContext validates the environment', () => {
   ]) {
     assert.throws(() => readContext(bad));
   }
+});
+
+
+test('single benchmark job reads flattened download-artifact v8 fingerprint', () => {
+  const fp = {vcpus:2,cpuModel:'measured'};
+  const rows = buildRows([{name:'plan'},job(),{name:'collect'}],ctx({artifactsDir:'art'}), p => p === join('art','fingerprint.json') ? fp : null);
+  assert.equal(rows[0].fingerprint,fp);
+});
+
+test('flattened fingerprint is never attributed across multiple benchmark jobs', () => {
+  for (const other of [job({name:'run github-hosted-4vcpu node-typescript 1'}),job({name:'run unknown node-typescript 1'}),job({name:'run malformed'}),job()]) {
+    const paths=[];
+    const rows=buildRows([job(),other],ctx({artifactsDir:'art'}),p=>{paths.push(p);return p===join('art','fingerprint.json')?{vcpus:2}:null;});
+    assert.ok(rows.every(r=>r.fingerprint===null));
+    assert.ok(!paths.includes(join('art','fingerprint.json')));
+  }
+});
+
+test('named fingerprint takes precedence over a flattened file', () => {
+  const nested={vcpus:4}; const paths=[];
+  const rows=buildRows([job()],ctx({artifactsDir:'art'}),p=>{paths.push(p);return nested;});
+  assert.equal(rows[0].fingerprint,nested);
+  assert.equal(paths.length,1);
 });

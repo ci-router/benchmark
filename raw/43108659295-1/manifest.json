@@ -1,0 +1,15 @@
+{
+  "repo": "ci-router/benchmark",
+  "runId": 43108659295,
+  "attempt": 1,
+  "headSha": "eaa5b917efd75845551ff102f86e812cb9f9967f",
+  "jobs": [
+    {
+      "jobId": 130826243482,
+      "name": "run depot-ubuntu-2vcpu rust-analyzer 1 warm",
+      "route": "depot-ubuntu-2vcpu",
+      "archived": false,
+      "reason": "route-not-enabled"
+    }
+  ]
+}

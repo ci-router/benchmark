@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   buildRows,
   fetchJobs,
@@ -379,7 +381,25 @@ test('readCacheFile accepts one bounded integer and nothing else', () => {
   assert.deepEqual(readCacheFile(w('a.json', '{"restoreBytes":123}')), { restoreBytes: 123 });
   assert.deepEqual(readCacheFile(w('b.json', '{"restoreBytes":"9"}')), { restoreBytes: null });
   assert.deepEqual(readCacheFile(w('c.json', '{"restoreBytes":-1}')), { restoreBytes: null });
+  // A warm job fails on a miss, so 0 bytes means the size was not measured.
+  assert.deepEqual(readCacheFile(w('z.json', '{"restoreBytes":0}')), { restoreBytes: null });
   assert.equal(readCacheFile(w('d.json', '[1]')), null);
   assert.equal(readCacheFile(w('e.json', 'x'.repeat(5000))), null);
   assert.equal(readCacheFile(join(dir, 'missing.json')), null);
+});
+
+// cache-size.sh uses GNU `du -b` (the runners); skip where du has no -b (macOS).
+const gnuDu = spawnSync('du', ['-sb', '.']).status === 0;
+test('cache-size.sh sums the restored paths inside an Actions step (GITHUB_OUTPUT set)', { skip: !gnuDu && 'no GNU du' }, () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cache-size-'));
+  const bench = join(dir, 'bench');
+  mkdirSync(join(bench, 'cargo', 'registry'), { recursive: true });
+  writeFileSync(join(bench, 'cargo', 'registry', 'blob'), Buffer.alloc(4096, 1));
+  const output = join(dir, 'github-output');
+  writeFileSync(output, '');
+  const out = join(dir, 'cache.json');
+  const script = join(dirname(fileURLToPath(import.meta.url)), 'cache-size.sh');
+  execFileSync('bash', [script, 'rust-analyzer', out], { env: { ...process.env, BENCH_DIR: bench, GITHUB_OUTPUT: output }, stdio: 'pipe' });
+  assert.ok(JSON.parse(readFileSync(out, 'utf8')).restoreBytes >= 4096);
+  assert.equal(readFileSync(output, 'utf8'), '');
 });

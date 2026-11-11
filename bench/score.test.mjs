@@ -421,6 +421,16 @@ test('cold and warm rows are scored in separate passes, never averaged', () => {
   assert.throws(() => score(all, opts({ cacheMode: 'both' })), /cacheMode/);
 });
 
+test('a warm row with restoreBytes 0 (not measured) is left out of restoreBytes and restoreMBps', () => {
+  const warm = rows('base4', 'w1', { n: 4, work: 40 }).map((r, i) => ({ ...r, cacheMode: 'warm', cacheBackend: 'github-actions-cache', restoreSeconds: 5,
+    restoreBytes: i === 0 ? 5e8 : 0, restoreMBps: i === 0 ? 100 : 0 }));
+  const w = score(warm, opts({ cacheMode: 'warm' })).routes.find((r) => r.route === 'base4');
+  assert.equal(w.cells.w1.restoreSeconds.n, 4);
+  assert.equal(w.cells.w1.restoreBytes.n, 1);
+  assert.equal(w.cells.w1.restoreMBps.n, 1);
+  assert.equal(w.cells.w1.restoreMBps.mean, 100);
+});
+
 test('rows from two cache backends are not one ranked entry', () => {
   const a = rows('base4', 'w1', { n: 10 }).map((r) => ({ ...r, cacheMode: 'warm', cacheBackend: 'x-cache' }));
   const b = rows('base4', 'w1', { n: 10 }).map((r) => ({ ...r, cacheMode: 'warm', cacheBackend: 'y-cache' }));

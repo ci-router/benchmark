@@ -151,7 +151,8 @@ export function readCacheFile(path) {
     const raw = JSON.parse(readFileSync(path, 'utf8'));
     if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return null;
     const bytes = Object.hasOwn(raw, 'restoreBytes') ? raw.restoreBytes : null;
-    return { restoreBytes: int(bytes, 0, MAX_CACHE_BYTES) };
+    // A warm job fails on a cache miss, so a restore of 0 bytes was not measured: record it as null.
+    return { restoreBytes: int(bytes, 1, MAX_CACHE_BYTES) };
   } catch {
     return null;
   }

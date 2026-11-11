@@ -16,6 +16,8 @@ while IFS= read -r path; do
     bytes=$(du -sb "$path" | cut -f1)
     total=$((total + bytes))
   fi
-done < <(bash "$here/cache-paths.sh" "$workload")
+# cache-paths.sh writes to GITHUB_OUTPUT instead of stdout when that is set (every Actions
+# step), so clear it here: the paths must come back on stdout.
+done < <(GITHUB_OUTPUT= bash "$here/cache-paths.sh" "$workload")
 printf '{"restoreBytes":%s}\n' "$total" >"$out"
 cat "$out"

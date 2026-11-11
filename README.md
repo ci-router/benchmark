@@ -115,8 +115,9 @@ node --test
 ## Safety
 
 The workflow starts from `workflow_dispatch` or the schedule. There is no `pull_request`
-trigger, no secrets in the benchmark jobs, no caches and no third-party actions;
-the four GitHub-owned actions in use are pinned by full commit SHA. The router
+trigger, no secrets in the benchmark jobs, no caches in the default cold mode and no
+third-party actions; the GitHub-owned actions in use (including `actions/cache`, used
+only in the opt-in warm mode) are pinned by full commit SHA. The router
 itself refuses to place jobs that did not come from a manual or scheduled run on
 the default branch, so a pull request from a fork cannot start paid compute.
 

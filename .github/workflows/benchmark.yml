@@ -18,6 +18,14 @@ on:
         required: false
         default: ''
         type: string
+      cache:
+        description: 'Cache mode: cold (no cache, fresh VM) or warm (a priming job saves the dependency cache, the measured jobs restore it). Warm needs a route with a recorded cache backend.'
+        required: false
+        default: cold
+        type: choice
+        options:
+          - cold
+          - warm
       workload:
         description: One workload (required for paid pilots)
         required: false
@@ -44,6 +52,8 @@ jobs:
     timeout-minutes: 5
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      prime: ${{ steps.matrix.outputs.prime }}
+      hasPrime: ${{ steps.matrix.outputs.hasPrime }}
     steps:
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -61,15 +71,52 @@ jobs:
           REPEATS: ${{ inputs.repeats || '1' }}
           ROUTE: ${{ inputs.route }}
           WORKLOAD: ${{ inputs.workload }}
+          CACHE_MODE: ${{ inputs.cache }}
           BENCHMARK_EVENT: ${{ github.event_name }}
         run: node bench/plan.mjs
+
+  # Warm mode only: one job per route and workload fills the route's cache
+  # backend. Cold runs skip it. The measured jobs restore what it saved.
+  prime:
+    if: ${{ needs.plan.outputs.hasPrime == 'true' && github.ref == 'refs/heads/main' && github.run_attempt == 1 }}
+    name: prime ${{ matrix.route.id }} ${{ matrix.workload }}
+    needs: plan
+    runs-on: ${{ matrix.route.runsOn }}
+    timeout-minutes: 30
+    permissions: {}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.plan.outputs.prime) }}
+    env:
+      WORKLOAD: ${{ matrix.workload }}
+      BENCH_CACHE_MODE: warm
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: setup
+        run: bash "workloads/${WORKLOAD}/setup.sh"
+      - name: prime
+        run: |
+          if [ -f "workloads/${WORKLOAD}/prime.sh" ]; then bash "workloads/${WORKLOAD}/prime.sh"; fi
+      - name: cache paths
+        id: paths
+        run: bash bench/cache-paths.sh "$WORKLOAD"
+      - name: save cache
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.paths.outputs.paths }}
+          key: bench-${{ github.run_id }}-${{ matrix.route.id }}-${{ matrix.workload }}
 
   run:
     # Paid jobs run only from main and only on the first attempt: a re-run of a
     # paid dispatch would be a retry, and a branch dispatch's result is never collected.
-    if: ${{ github.ref == 'refs/heads/main' && github.run_attempt == 1 }}
-    name: run ${{ matrix.route.id }} ${{ matrix.workload }} ${{ matrix.rep }}
-    needs: plan
+    # A cold run has no priming job (skipped); a failed priming job stops the warm runs.
+    if: ${{ !cancelled() && needs.plan.result == 'success' && (needs.prime.result == 'success' || needs.prime.result == 'skipped') && github.ref == 'refs/heads/main' && github.run_attempt == 1 }}
+    name: run ${{ matrix.route.id }} ${{ matrix.workload }} ${{ matrix.rep }}${{ matrix.mode == 'warm' && ' warm' || '' }}
+    needs: [plan, prime]
     runs-on: ${{ matrix.route.runsOn }}
     timeout-minutes: 15
     permissions: {}
@@ -79,6 +126,7 @@ jobs:
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       WORKLOAD: ${{ matrix.workload }}
+      BENCH_CACHE_MODE: ${{ matrix.mode }}
     steps:
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -86,6 +134,23 @@ jobs:
           persist-credentials: false
       - name: fingerprint
         run: bash bench/fingerprint.sh > fingerprint.json
+      - name: cache paths
+        if: ${{ matrix.mode == 'warm' }}
+        id: paths
+        run: bash bench/cache-paths.sh "$WORKLOAD"
+      # Timed on its own: collect reads this step's duration as restoreSeconds.
+      # An exact key and a failure on a miss: a missing cache is a failed job,
+      # never a silent cold run recorded as warm.
+      - name: restore cache
+        if: ${{ matrix.mode == 'warm' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.paths.outputs.paths }}
+          key: bench-${{ github.run_id }}-${{ matrix.route.id }}-${{ matrix.workload }}
+          fail-on-cache-miss: true
+      - name: measure restore
+        if: ${{ matrix.mode == 'warm' }}
+        run: bash bench/cache-size.sh "$WORKLOAD" cache.json
       - name: setup
         run: bash "workloads/${WORKLOAD}/setup.sh"
       - name: work
@@ -94,8 +159,10 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: fingerprint-${{ github.run_attempt }}-${{ matrix.route.id }}-${{ matrix.workload }}-${{ matrix.rep }}
-          path: fingerprint.json
+          name: fingerprint-${{ github.run_attempt }}-${{ matrix.route.id }}-${{ matrix.workload }}-${{ matrix.rep }}${{ matrix.mode == 'warm' && '-warm' || '' }}
+          path: |
+            fingerprint.json
+            cache.json
           if-no-files-found: ignore
           retention-days: 90
 

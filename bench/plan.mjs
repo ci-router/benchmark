@@ -13,6 +13,24 @@ import { fileURLToPath } from 'node:url';
 
 export const ID_RE = /^[a-z0-9][a-z0-9-]{0,62}$/;
 export const FREE_BASELINE_ROUTE = 'github-hosted-4vcpu';
+export const CACHE_MODES = ['cold', 'warm'];
+
+export function parseCacheMode(value) {
+  if (value === undefined || value === '') return 'cold';
+  if (!CACHE_MODES.includes(value)) throw new Error('cache mode must be cold or warm');
+  return value;
+}
+
+/** A route's cache backend id, or null when none is recorded. Warm needs a recorded one. */
+function readCacheBackend(route) {
+  if (route.cache === undefined) return null;
+  const backend = route.cache?.backend;
+  if (backend === null) return null;
+  if (typeof backend !== 'string' || !ID_RE.test(backend)) {
+    throw new Error(`routes.json: route ${route.id} has a bad cache.backend`);
+  }
+  return backend;
+}
 
 export function parseRepeats(value) {
   if (typeof value !== 'string' || !/^[0-9]{1,2}$/.test(value)) {
@@ -49,6 +67,7 @@ export function readRoutes(path) {
       memoryGb: r.memoryGb,
       image: r.image,
       enabled: r.enabled,
+      cacheBackend: readCacheBackend(r),
     };
   });
 }
@@ -158,12 +177,36 @@ export function selectWorkloads(routes, available, requested = 'all', repeats = 
   return [requested];
 }
 
-export function buildMatrix(routes, workloads, repeats) {
+/**
+ * Warm needs a recorded cache backend (part of the route identity) and never
+ * runs on the schedule. Cold is today's behavior and needs neither.
+ */
+export function assertCacheMode(routes, mode, scheduled = false) {
+  if (mode === 'cold') return;
+  if (scheduled) throw new Error('scheduled runs are cold only');
+  for (const route of routes) {
+    if (route.cacheBackend === null || route.cacheBackend === undefined) {
+      throw new Error(`route ${route.id} has no recorded cache backend; warm needs one`);
+    }
+  }
+}
+
+export function buildMatrix(routes, workloads, repeats, mode = 'cold') {
   const include = [];
   for (const route of routes.filter((r) => r.enabled)) {
     for (const workload of workloads) {
-      for (let rep = 1; rep <= repeats; rep++) include.push({ route, workload, rep });
+      for (let rep = 1; rep <= repeats; rep++) include.push({ route, workload, rep, mode });
     }
+  }
+  return { include };
+}
+
+/** One priming job per route and workload, warm only; the repeats share its cache. */
+export function buildPrimeMatrix(routes, workloads, mode = 'cold') {
+  const include = [];
+  if (mode !== 'warm') return { include };
+  for (const route of routes.filter((r) => r.enabled)) {
+    for (const workload of workloads) include.push({ route, workload });
   }
   return { include };
 }
@@ -176,6 +219,7 @@ function main() {
   let selected;
   let workloads;
   let repeats;
+  let mode = 'cold';
   if (scheduled) {
     const config = JSON.parse(readFileSync(join(root, 'schedule.json'), 'utf8'));
     const suite = JSON.parse(readFileSync(join(root, 'suite.json'), 'utf8'));
@@ -188,13 +232,16 @@ function main() {
     repeats = parseRepeats(process.env.REPEATS ?? '1');
     selected = selectRoutes(routes, process.env.ROUTE ?? '');
     workloads = selectWorkloads(selected, available, process.env.WORKLOAD ?? 'all', repeats);
+    mode = parseCacheMode(process.env.CACHE_MODE ?? '');
   }
-  const matrix = buildMatrix(selected, workloads, repeats);
+  assertCacheMode(selected, mode, scheduled);
+  const matrix = buildMatrix(selected, workloads, repeats, mode);
   if (matrix.include.length === 0) throw new Error('the matrix is empty: no enabled route or no workload');
-  const line = `matrix=${JSON.stringify(matrix)}\n`;
+  const prime = buildPrimeMatrix(selected, workloads, mode);
+  const line = `matrix=${JSON.stringify(matrix)}\nprime=${JSON.stringify(prime)}\nhasPrime=${prime.include.length > 0}\n`;
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, line);
   else process.stdout.write(line);
-  console.error(`plan: ${matrix.include.length} jobs`);
+  console.error(`plan: ${matrix.include.length} jobs, ${mode}, ${prime.include.length} priming jobs`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

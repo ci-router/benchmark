@@ -174,8 +174,47 @@ A route is one way of getting a runner:
 ## Workloads
 
 Each workload has a `setup.sh` (toolchain and dependencies) and a `work.sh` (the
-part that is compared). No caches, a fresh VM every time, toolchains pinned to
-exact versions.
+part that is compared). Toolchains are pinned to exact versions and every job
+starts on a fresh VM. The default is the cold mode: no caches. See "Cache modes".
+
+### Cache modes
+
+Every route can have two separate entries, `cold` and `warm`. A result row
+without a `cacheMode` is cold. Cold and warm are never averaged together, and a
+leaderboard shows them as separate entries.
+
+- `cold`: no cache, a fresh VM. Unchanged from earlier suite versions.
+- `warm`: a priming job per route and workload runs `setup.sh` (and `prime.sh`
+  where a workload has one), then saves the workload's cache paths
+  (`cache-paths.txt`) with `actions/cache` under a key that includes the run id.
+  Each measured job restores that exact key in a separate step named
+  `restore cache`, then runs `setup.sh` and `work.sh` as usual. A cache miss
+  fails the job; it is never recorded as a warm result. The priming job is not
+  scored.
+- What is cached: `node-typescript` caches the npm cache (the workload installs
+  with `npm ci`); `rust-analyzer` caches the cargo registry, the cargo git
+  checkouts and the `target` directory. In warm mode `work.sh` keeps the restored
+  `target` directory, so the build is an incremental build against cached
+  dependencies. Source files are a fresh checkout, so their modification times
+  differ from the cached build.
+- Cache backend: part of the route identity, recorded as `cache.backend` in
+  `routes.json` and as `cacheBackend` in every row (`null` when not recorded).
+  Examples: `github-actions-cache`, `depot-cache`, a provider's transparent
+  cache, later a router cache. A route with no recorded backend cannot run warm,
+  and rows from different backends are separate entries.
+- Metrics, recorded next to `setupSeconds` and `workSeconds` in warm rows:
+  `restoreSeconds` (the duration of the `restore cache` step from the jobs API),
+  `restoreBytes` (bytes on disk after the restore, not the compressed archive)
+  and `restoreMBps` (`restoreBytes` / 10^6 / `restoreSeconds`). They are `null` in
+  cold rows. The scorer reports them per cell.
+- What warm shows: how a route's cache backend and network affect a job that can
+  reuse its dependencies. What it does not show: hit rates over time, cache
+  eviction, concurrent jobs sharing a cache, or any cache other than the one
+  the route offers. One primed cache serves all repeats of a dispatch, so the
+  repeats are not independent restores of different caches.
+- A dispatch picks one mode (`cache` input). Scheduled runs are always cold.
+  A warm sample costs a priming job plus the measured jobs, which counts
+  against any paid-pilot allowance.
 
 | Workload | Measures | Pin | Stage |
 | --- | --- | --- | --- |
@@ -312,7 +351,7 @@ cell whose coefficient of variation is above 15% is flagged as unstable.
   given) can write, only on the default branch, and only to the `results`
   branch.
 - Actions are pinned by full commit SHA and change only in a reviewed suite
-  version. No caches, no third-party actions.
+  version. No third-party actions; the only cache is `actions/cache` in the opt-in warm mode.
 - Scripts avoid printing the environment or the process list. Workloads run
   third-party test suites that we do not control, so this alone is not a
   guarantee that nothing sensitive reaches a public log; that is why the jobs
@@ -330,7 +369,8 @@ cell whose coefficient of variation is above 15% is flagged as unstable.
   host idle. We say we do not, and anyone can reproduce the run on their own
   account.
 - Results describe the workloads in the suite. I/O-heavy or cache-heavy jobs
-  can behave differently.
+  can behave differently. Cold results give a provider's cache no credit; warm
+  results do, for the dependency caches described above only.
 - The public hosted runner has more CPU than the private one most paying
   customers get.
 - With few runs per route, conclusions about the spread of results remain limited.

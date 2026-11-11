@@ -68,5 +68,7 @@ fi
 # shellcheck disable=SC1091
 . "$dir/node-env.sh"
 cd "$src"
+# Kept under the bench directory so warm mode can save and restore it.
+export npm_config_cache="$dir/npm-cache"
 npm ci --no-audit --no-fund
 echo "setup done: node $(node --version), npm $(npm --version), TypeScript $TS_TAG at $head"

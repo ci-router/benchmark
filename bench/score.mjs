@@ -126,8 +126,9 @@ function buildCell(rows) {
     byCpu: byCpu(successes),
     setup: summarize(successes.map((r) => r.setupSeconds).filter((v) => typeof v === 'number')),
     restoreSeconds: summarize(successes.map((r) => r.restoreSeconds)),
-    restoreBytes: summarize(successes.map((r) => r.restoreBytes)),
-    restoreMBps: summarize(successes.map((r) => r.restoreMBps)),
+    // Rows published before cache-size.sh was fixed carry restoreBytes 0 and restoreMBps 0: not measured.
+    restoreBytes: summarize(successes.map((r) => (r.restoreBytes === 0 ? null : r.restoreBytes))),
+    restoreMBps: summarize(successes.map((r) => (r.restoreBytes === 0 ? null : r.restoreMBps))),
     cost: summarize(costs),
   };
 }

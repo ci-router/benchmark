@@ -206,7 +206,11 @@ leaderboard shows them as separate entries.
   `restoreSeconds` (the duration of the `restore cache` step from the jobs API),
   `restoreBytes` (bytes on disk after the restore, not the compressed archive)
   and `restoreMBps` (`restoreBytes` / 10^6 / `restoreSeconds`). They are `null` in
-  cold rows. The scorer reports them per cell.
+  cold rows. The scorer reports them per cell. A warm job fails on a cache miss,
+  so a `restoreBytes` of 0 means the size was not measured: it is recorded as
+  `null`, and the scorer reads a `0` in any row as `null`. That covers the rows
+  of run `43087157861`, published with `0` before the measurement was fixed; the
+  file keeps the `0` (the branch is append-only), and its `restoreSeconds` stand.
 - What warm shows: how a route's cache backend and network affect a job that can
   reuse its dependencies. What it does not show: hit rates over time, cache
   eviction, concurrent jobs sharing a cache, or any cache other than the one

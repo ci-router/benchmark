@@ -9,6 +9,11 @@ here=$(cd "$(dirname "$0")" && pwd)
 workload=${1:?usage: cache-size.sh <workload> [out-file]}
 out=${2:-cache.json}
 
+# cache-paths.sh writes to GITHUB_OUTPUT instead of stdout when that is set (every Actions
+# step), so clear it here: the paths must come back on stdout. A command substitution, not a
+# process substitution, so a failing helper fails this script under set -e instead of giving 0.
+paths=$(GITHUB_OUTPUT= bash "$here/cache-paths.sh" "$workload")
+
 total=0
 while IFS= read -r path; do
   [ -n "$path" ] || continue
@@ -16,6 +21,6 @@ while IFS= read -r path; do
     bytes=$(du -sb "$path" | cut -f1)
     total=$((total + bytes))
   fi
-done < <(bash "$here/cache-paths.sh" "$workload")
+done <<<"$paths"
 printf '{"restoreBytes":%s}\n' "$total" >"$out"
 cat "$out"

@@ -402,3 +402,29 @@ test('the CLI scores an earlier suite with that suite\'s own workloads', async (
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('cold and warm rows are scored in separate passes, never averaged', () => {
+  const cold = rows('base4', 'w1', { n: 20, work: 100 });
+  const warm = rows('base4', 'w1', { n: 20, work: 40 }).map((r) => ({ ...r, cacheMode: 'warm', cacheBackend: 'github-actions-cache', restoreSeconds: 5, restoreBytes: 5e8, restoreMBps: 100 }));
+  const all = [...cold, ...warm];
+  const pick = (o) => score(all, opts(o)).routes.find((r) => r.route === 'base4');
+  const c = pick({});
+  assert.equal(c.cacheMode, 'cold');
+  assert.equal(c.cells.w1.work.n, 20);
+  assert.equal(c.cells.w1.work.mean, 100);
+  const w = pick({ cacheMode: 'warm' });
+  assert.equal(w.cacheMode, 'warm');
+  assert.equal(w.cells.w1.work.n, 20);
+  assert.equal(w.cells.w1.work.mean, 40);
+  assert.equal(w.cells.w1.restoreMBps.mean, 100);
+  assert.deepEqual(w.cacheBackends, ['github-actions-cache']);
+  assert.throws(() => score(all, opts({ cacheMode: 'both' })), /cacheMode/);
+});
+
+test('rows from two cache backends are not one ranked entry', () => {
+  const a = rows('base4', 'w1', { n: 10 }).map((r) => ({ ...r, cacheMode: 'warm', cacheBackend: 'x-cache' }));
+  const b = rows('base4', 'w1', { n: 10 }).map((r) => ({ ...r, cacheMode: 'warm', cacheBackend: 'y-cache' }));
+  const e = score([...a, ...b], opts({ cacheMode: 'warm' })).routes.find((r) => r.route === 'base4');
+  assert.equal(e.ranked, false);
+  assert.ok(e.reasons.some((x) => /cache backends/.test(x)));
+});

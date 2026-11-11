@@ -2,7 +2,11 @@
 //
 // Usage: node bench/score.mjs [--results results] [--suite <version>]
 //          [--time-baseline <vcpu>=<routeId>]... [--cost-baseline <routeId>]
+//          [--cache-mode cold|warm]
 // Reads results/<suite>/*.jsonl, routes.json and suite.json, prints JSON.
+//
+// Cold and warm rows are scored in separate passes and never averaged together;
+// a row without a cacheMode (written before cache modes) is cold.
 //
 // Unknown is null, never 0: a missing cost makes Value and Score null.
 import { readFileSync, readdirSync } from 'node:fs';
@@ -15,6 +19,9 @@ export const MIN_TIME_WINDOWS = 2; // distinct 6-hour UTC windows
 export const MIN_RELIABILITY_PERCENT = 95;
 export const UNSTABLE_CV = 0.15;
 export const P95_MIN_SAMPLES = 40;
+export const CACHE_MODES = ['cold', 'warm'];
+/** A row's cache mode; a missing one means cold. */
+export const cacheModeOf = (row) => (row.cacheMode === 'warm' ? 'warm' : 'cold');
 const ATTEMPT_CONCLUSIONS = new Set(['success', 'failure', 'timed_out']);
 
 /** Percentile by linear interpolation between closest ranks. `sorted` ascending, non-empty. */
@@ -118,6 +125,9 @@ function buildCell(rows) {
     work: summarize(successes.map((r) => r.workSeconds).filter((v) => typeof v === 'number')),
     byCpu: byCpu(successes),
     setup: summarize(successes.map((r) => r.setupSeconds).filter((v) => typeof v === 'number')),
+    restoreSeconds: summarize(successes.map((r) => r.restoreSeconds)),
+    restoreBytes: summarize(successes.map((r) => r.restoreBytes)),
+    restoreMBps: summarize(successes.map((r) => r.restoreMBps)),
     cost: summarize(costs),
   };
 }
@@ -132,8 +142,9 @@ function buildCell(rows) {
  * @param {string|null} opts.costBaseline   route id of the cost reference (e.g. the private 2-vCPU run)
  */
 export function score(rows, opts) {
-  const { suite, workloads, routes, timeBaselines = {}, costBaseline = null } = opts;
-  const suiteRows = rows.filter((r) => r && typeof r === 'object' && r.suite === suite);
+  const { suite, workloads, routes, timeBaselines = {}, costBaseline = null, cacheMode = 'cold' } = opts;
+  if (!CACHE_MODES.includes(cacheMode)) throw new Error('cacheMode must be cold or warm');
+  const suiteRows = rows.filter((r) => r && typeof r === 'object' && r.suite === suite && cacheModeOf(r) === cacheMode);
   const routeIds = new Set([...routes.map((r) => r.id), ...suiteRows.map((r) => r.route)]);
   const vcpuOf = new Map(routes.map((r) => [r.id, r.vcpu]));
 
@@ -202,8 +213,14 @@ export function score(rows, opts) {
       reasons.push(`no score (${speed === null ? 'speed unknown' : 'value unknown, cost missing'})`);
     }
 
+    // The backend is part of the route identity: rows from different backends are not one entry.
+    const backends = [...new Set(suiteRows.filter((r) => r.route === id).map((r) => r.cacheBackend ?? null))].sort();
+    if (backends.length > 1) reasons.push(`rows come from ${backends.length} cache backends; they are separate entries`);
+
     results.push({
       route: id,
+      cacheMode,
+      cacheBackends: backends.filter((b) => b !== null),
       vcpu,
       cells: Object.fromEntries(workloads.map((w) => [w, byWorkload.get(w)])),
       timeRatios: Object.fromEntries(workloads.map((w, i) => [w, timeRatios[i]])),
@@ -224,7 +241,7 @@ export function score(rows, opts) {
   ranked.forEach((r, i) => {
     r.rank = i > 0 && ranked[i - 1].score === r.score ? ranked[i - 1].rank : i + 1;
   });
-  return { suite, workloads, routes: results };
+  return { suite, cacheMode, workloads, routes: results };
 }
 
 function args(name) {
@@ -278,6 +295,7 @@ function main() {
     routes,
     timeBaselines,
     costBaseline: args('cost-baseline')[0] ?? null,
+    cacheMode: args('cache-mode')[0] ?? 'cold',
   });
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
 }

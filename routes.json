@@ -8,7 +8,10 @@
       "memoryGb": 16,
       "image": "ubuntu-24.04",
       "enabled": true,
-      "archiveLogs": true
+      "archiveLogs": true,
+      "cache": {
+        "backend": "github-actions-cache"
+      }
     },
     {
       "id": "ubicloud-hosted-4vcpu",
@@ -23,6 +26,9 @@
         "premiumCpu": null,
         "transparentCache": null
       },
+      "cache": {
+        "backend": null
+      },
       "note": "Ubicloud's own hosted runner, started through the Ubicloud GitHub App. Disabled until that App is installed on the organization. Record the premium CPU and transparent cache settings here before enabling it; null means not recorded."
     },
     {
@@ -34,6 +40,9 @@
       "image": "ubuntu-24.04",
       "enabled": true,
       "hostedRunner": true,
+      "cache": {
+        "backend": "depot-cache"
+      },
       "note": "Bounded external pilot only: native Depot App installation 179933674 exists on ci-router; prior same-repository run 42509881072 succeeded with this label. Select this route explicitly with one workload and one repetition. Current repository access/account admission is exercised by the pilot; no plan purchase or claim of hard billing cutoff. Retain a $1 operational allocation within the $2 external/$10 combined daily budget until terminal reconciliation. Other Depot sizes remain disabled."
     },
     {
@@ -45,6 +54,9 @@
       "image": "ubuntu-24.04",
       "enabled": false,
       "hostedRunner": true,
+      "cache": {
+        "backend": "depot-cache"
+      },
       "note": "Collection disabled pending repository access, publication terms and bounded spend verification. Depot's own hosted runner (label depot-ubuntu-24.04-4: 4 vCPU, 16 GB, x86 on AWS EC2, $0.012 per minute per depot.dev/docs/github-actions/runner-types, read 2026-11-08), the like-for-like match for github-hosted-4vcpu. Same Depot App and terms as depot-ubuntu-2vcpu."
     },
     {
@@ -56,6 +68,9 @@
       "image": "ubuntu",
       "enabled": true,
       "hostedRunner": true,
+      "cache": {
+        "backend": null
+      },
       "note": "Bounded external native Boat default pilot: exactly two owner-authorized jobs, one node-typescript canary then one rust-analyzer, repeat 1, serial, no retry, within the remaining $1 external allocation. Run 42802720019 (boat-small) was refused: 'CI on Boat VMs needs the $20/month plan or higher'. The owner reported starting the plan on 2026-11-10; the canary is the proof, a refusal is not a measurement. Label boat: 4 vCPU, 8 GB, 51 GB disk, $0.036/hour billed per second (docs.boat.dev/pricing.md, read 2026-11-10); an extra start above the plan's included ones may add $0.03 to $0.07. Shared vCPUs, no promised CPU model: read the job's reported fingerprint. Boat refuses public-repository jobs until the account owner opts in (`boat ci public <account> on`). Native Boat owns sandbox teardown; no hard billing cutoff is asserted. Boat's terms (boat.dev/terms, effective 2026-10-12) have no benchmark, comparison or confidentiality clause; TOS-10 forbids probing or evading usage limits and metering, which this suite does not do."
     },
     {
@@ -67,6 +82,9 @@
       "image": "ubuntu",
       "enabled": false,
       "hostedRunner": true,
+      "cache": {
+        "backend": null
+      },
       "note": "Disabled after run 42802720019 was refused before any work for the Boat plan ('CI on Boat VMs needs the $20/month plan or higher'); superseded by the boat-4vcpu default pilot. No measurement exists for this route and none is authorized. Label boat-small: 2 vCPU, 4 GB (docs.boat.dev/ci.md, read 2026-11-10). Re-enabling needs a fresh owner authorization and price check."
     },
     {
@@ -82,6 +100,9 @@
       "settings": {
         "transparentCache": null,
         "stickyDisk": null
+      },
+      "cache": {
+        "backend": null
       },
       "note": "Prepared from tenki.cloud/docs/runners/quickstart and tenki.cloud/docs/runners/x64-runners.md, checked 2026-11-09. The quickstart gives this 4-vCPU/8-GB label; Linux runners default to Ubuntu 24.04. Disabled until the actual repository has runner access, account size eligibility and publication terms are verified, cache/sticky-disk settings recorded, and collection spend is bounded. Sandbox API access is not hosted-runner access. The actual image and resources must be checked against the job fingerprint. Tenki Terms of Service section 4.2(iv) and Acceptable Use Policy section 3 (checked 2026-11-09) require prior written consent covering the intended benchmark and publication; verify that consent before execution. Account setup and runner access are not publication consent."
     }

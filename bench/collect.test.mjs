@@ -8,7 +8,11 @@ import {
   fetchJobs,
   parseJobName,
   readContext,
+  readCacheFile,
   readFingerprintFile,
+  restoreMBps,
+  restoreSeconds,
+  artifactDirName,
   sanitizeFingerprint,
   secondsBetween,
   stepSeconds,
@@ -45,8 +49,8 @@ const job = (extra = {}) => ({
 });
 
 test('parseJobName accepts the exact form', () => {
-  assert.deepEqual(parseJobName('run github-hosted-4vcpu rust-analyzer 3'), { routeId: 'github-hosted-4vcpu', workload: 'rust-analyzer', rep: 3 });
-  assert.deepEqual(parseJobName('run a b 10'), { routeId: 'a', workload: 'b', rep: 10 });
+  assert.deepEqual(parseJobName('run github-hosted-4vcpu rust-analyzer 3'), { routeId: 'github-hosted-4vcpu', workload: 'rust-analyzer', rep: 3, cacheMode: 'cold' });
+  assert.deepEqual(parseJobName('run a b 10'), { routeId: 'a', workload: 'b', rep: 10, cacheMode: 'cold' });
 });
 
 test('parseJobName rejects hostile and malformed names', () => {
@@ -318,4 +322,64 @@ test('named fingerprint takes precedence over a flattened file', () => {
   const rows=buildRows([job()],ctx({artifactsDir:'art'}),p=>{paths.push(p);return nested;});
   assert.equal(rows[0].fingerprint,nested);
   assert.equal(paths.length,1);
+});
+
+test('a cold job name is unchanged and a warm one carries the mode', () => {
+  assert.deepEqual(parseJobName('run a b 2'), { routeId: 'a', workload: 'b', rep: 2, cacheMode: 'cold' });
+  assert.deepEqual(parseJobName('run a b 2 warm'), { routeId: 'a', workload: 'b', rep: 2, cacheMode: 'warm' });
+  for (const bad of ['run a b 2 cold', 'run a b 2 hot', 'run a b 2  warm', 'run a b 2 warm ', 'run a b warm']) {
+    assert.equal(parseJobName(bad), null, bad);
+  }
+  assert.equal(artifactDirName(1, 'a', 'b', 2), 'fingerprint-1-a-b-2');
+  assert.equal(artifactDirName(1, 'a', 'b', 2, 'warm'), 'fingerprint-1-a-b-2-warm');
+});
+
+test('cold rows record mode and backend and have no restore metrics', () => {
+  const [r] = buildRows([job()], ctx({ routeCaches: new Map([['github-hosted-4vcpu', 'github-actions-cache']]) }), () => null);
+  assert.equal(r.cacheMode, 'cold');
+  assert.equal(r.cacheBackend, 'github-actions-cache');
+  assert.equal(r.restoreSeconds, null);
+  assert.equal(r.restoreBytes, null);
+  assert.equal(r.restoreMBps, null);
+  // no recorded backend is null, never a guess
+  assert.equal(buildRows([job()], ctx(), () => null)[0].cacheBackend, null);
+});
+
+test('warm rows keep cold and warm of one cell apart and carry restore metrics', () => {
+  const restore = { name: 'restore cache', status: 'completed', conclusion: 'success', started_at: '2026-01-01T10:00:20Z', completed_at: '2026-01-01T10:00:30Z' };
+  const warm = job({ name: 'run github-hosted-4vcpu rust-analyzer 1 warm', steps: [...job().steps, restore] });
+  const rows = buildRows(
+    [job(), warm],
+    ctx({ routeCaches: new Map([['github-hosted-4vcpu', 'github-actions-cache']]) }),
+    () => null,
+    () => ({ restoreBytes: 500_000_000 }),
+  );
+  assert.equal(rows.length, 2);
+  const w = rows.find((r) => r.cacheMode === 'warm');
+  assert.equal(w.restoreSeconds, 10);
+  assert.equal(w.restoreBytes, 500_000_000);
+  assert.equal(w.restoreMBps, 50);
+  assert.equal(w.cacheBackend, 'github-actions-cache');
+  assert.equal(rows.find((r) => r.cacheMode === 'cold').restoreBytes, null);
+});
+
+test('restoreSeconds ignores a skipped or failed restore step; MB/s needs both inputs', () => {
+  const mk = (conclusion) => [{ name: 'restore cache', status: 'completed', conclusion, started_at: '2026-01-01T00:00:00Z', completed_at: '2026-01-01T00:00:00Z' }];
+  assert.equal(restoreSeconds(mk('skipped')), null);
+  assert.equal(restoreSeconds(mk('failure')), null);
+  assert.equal(restoreSeconds(mk('success')), 0);
+  assert.equal(restoreMBps(1e6, 0), null);
+  assert.equal(restoreMBps(null, 5), null);
+  assert.equal(restoreMBps(2e6, 1), 2);
+});
+
+test('readCacheFile accepts one bounded integer and nothing else', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cache-'));
+  const w = (name, body) => { writeFileSync(join(dir, name), body); return join(dir, name); };
+  assert.deepEqual(readCacheFile(w('a.json', '{"restoreBytes":123}')), { restoreBytes: 123 });
+  assert.deepEqual(readCacheFile(w('b.json', '{"restoreBytes":"9"}')), { restoreBytes: null });
+  assert.deepEqual(readCacheFile(w('c.json', '{"restoreBytes":-1}')), { restoreBytes: null });
+  assert.equal(readCacheFile(w('d.json', '[1]')), null);
+  assert.equal(readCacheFile(w('e.json', 'x'.repeat(5000))), null);
+  assert.equal(readCacheFile(join(dir, 'missing.json')), null);
 });

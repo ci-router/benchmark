@@ -58,8 +58,9 @@ export PATH="$dir/cargo/bin:\$PATH"
 ENVEOF
 
 src="$dir/rust-analyzer"
-rm -rf "$src"
+# Keep a restored target directory (warm mode); a cold VM has none.
 mkdir -p "$src"
+find "$src" -mindepth 1 -maxdepth 1 ! -name target -exec rm -rf {} +
 git -C "$src" init -q
 git -C "$src" remote add origin "$RA_REPO"
 git -C "$src" fetch -q --depth 1 origin "$RA_COMMIT"

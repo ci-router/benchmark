@@ -14,7 +14,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const ID_RE = /^[a-z0-9][a-z0-9-]{0,62}$/;
-export const JOB_NAME_RE = /^run ([a-z0-9][a-z0-9-]{0,62}) ([a-z0-9][a-z0-9-]{0,62}) ([0-9]{1,2})$/;
+// A cold job keeps the original name; only a warm job carries a suffix, so a missing mode means cold.
+export const JOB_NAME_RE = /^run ([a-z0-9][a-z0-9-]{0,62}) ([a-z0-9][a-z0-9-]{0,62}) ([0-9]{1,2})( warm)?$/;
+export const MAX_CACHE_BYTES = 10 * 1024 ** 4;
+export const MAX_CACHE_JSON_BYTES = 1024;
 export const MAX_REP = 10;
 export const MAX_FINGERPRINT_BYTES = 4096;
 const CONCLUSIONS = new Set(['success', 'failure', 'cancelled', 'skipped', 'timed_out', 'neutral', 'action_required', 'stale']);
@@ -22,14 +25,14 @@ const TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?Z$/;
 const SHA_RE = /^[0-9a-f]{40}$/;
 const PRINTABLE_RE = /^[\x20-\x7e]+$/;
 
-/** Parse `run <routeId> <workload> <rep>`; null for any other name. */
+/** Parse `run <routeId> <workload> <rep>[ warm]`; null for any other name. */
 export function parseJobName(name) {
   if (typeof name !== 'string' || name.length > 200) return null;
   const m = JOB_NAME_RE.exec(name);
   if (!m) return null;
   const rep = Number.parseInt(m[3], 10);
   if (rep < 1 || rep > MAX_REP) return null;
-  return { routeId: m[1], workload: m[2], rep };
+  return { routeId: m[1], workload: m[2], rep, cacheMode: m[4] ? 'warm' : 'cold' };
 }
 
 /** The ids of the routes listed in routes.json (enabled or not). */
@@ -41,6 +44,19 @@ export function readRouteIds(path) {
     if (r && typeof r.id === 'string' && ID_RE.test(r.id)) ids.add(r.id);
   }
   return ids;
+}
+
+/** route id -> recorded cache backend id (or null), for every route in routes.json. */
+export function readRouteCaches(path) {
+  const parsed = JSON.parse(readFileSync(path, 'utf8'));
+  if (!parsed || !Array.isArray(parsed.routes)) throw new Error('routes.json: "routes" must be an array');
+  const caches = new Map();
+  for (const r of parsed.routes) {
+    if (!r || typeof r.id !== 'string' || !ID_RE.test(r.id)) continue;
+    const backend = r.cache?.backend;
+    caches.set(r.id, typeof backend === 'string' && ID_RE.test(backend) ? backend : null);
+  }
+  return caches;
 }
 
 /** The valid workload ids: directories under workloads/. */
@@ -120,8 +136,39 @@ export function readFingerprintFile(path) {
 }
 
 /** The directory name upload-artifact is given for a job; built only from validated parts. */
-export function artifactDirName(attempt, routeId, workload, rep) {
-  return `fingerprint-${attempt}-${routeId}-${workload}-${rep}`;
+export function artifactDirName(attempt, routeId, workload, rep, cacheMode = 'cold') {
+  return `fingerprint-${attempt}-${routeId}-${workload}-${rep}${cacheMode === 'warm' ? '-warm' : ''}`;
+}
+
+/**
+ * The restored cache size the job measured (cache.json beside the fingerprint).
+ * Untrusted like the fingerprint: a regular small file, one integer, else null.
+ */
+export function readCacheFile(path) {
+  try {
+    const st = lstatSync(path);
+    if (!st.isFile() || st.size > MAX_CACHE_JSON_BYTES) return null;
+    const raw = JSON.parse(readFileSync(path, 'utf8'));
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const bytes = Object.hasOwn(raw, 'restoreBytes') ? raw.restoreBytes : null;
+    return { restoreBytes: int(bytes, 0, MAX_CACHE_BYTES) };
+  } catch {
+    return null;
+  }
+}
+
+/** Restore step time, only when the step really ran and succeeded (a skipped step has a near-zero duration). */
+export function restoreSeconds(steps) {
+  if (!Array.isArray(steps)) return null;
+  const matches = steps.filter((s) => s && typeof s === 'object' && s.name === 'restore cache');
+  if (matches.length !== 1 || matches[0].conclusion !== 'success') return null;
+  return stepSeconds(steps, 'restore cache');
+}
+
+/** MB/s (10^6 bytes) from bytes and seconds; null when either is unknown or the time is zero. */
+export function restoreMBps(bytes, seconds) {
+  if (typeof bytes !== 'number' || typeof seconds !== 'number' || seconds <= 0) return null;
+  return bytes / 1e6 / seconds;
 }
 
 /**
@@ -129,7 +176,7 @@ export function artifactDirName(attempt, routeId, workload, rep) {
  * { suite, repo, runId, attempt, routeIds, workloadIds, artifactsDir, warn }.
  * `readFingerprint(path)` is injectable for tests.
  */
-export function buildRows(jobs, ctx, readFingerprint = readFingerprintFile) {
+export function buildRows(jobs, ctx, readFingerprint = readFingerprintFile, readCache = readCacheFile) {
   const warn = ctx.warn ?? (() => {});
   const rows = [];
   const seen = new Set();
@@ -152,23 +199,31 @@ export function buildRows(jobs, ctx, readFingerprint = readFingerprintFile) {
       warn(`skipping unfinished job ${JSON.stringify(job.name)}`);
       continue;
     }
-    const key = `${parsed.routeId} ${parsed.workload} ${parsed.rep}`;
+    const key = `${parsed.routeId} ${parsed.workload} ${parsed.rep} ${parsed.cacheMode}`;
     if (seen.has(key)) {
       warn(`skipping a duplicate job ${JSON.stringify(key)}`);
       continue;
     }
     seen.add(key);
-    let fingerprint = readFingerprint(
-      join(ctx.artifactsDir, artifactDirName(ctx.attempt, parsed.routeId, parsed.workload, parsed.rep), 'fingerprint.json'),
-    );
+    const warm = parsed.cacheMode === 'warm';
+    const artifactDir = join(ctx.artifactsDir, artifactDirName(ctx.attempt, parsed.routeId, parsed.workload, parsed.rep, parsed.cacheMode));
+    let fingerprint = readFingerprint(join(artifactDir, 'fingerprint.json'));
     if (fingerprint === null && oneBenchmarkJob) {
       fingerprint = readFingerprint(join(ctx.artifactsDir, 'fingerprint.json'));
+    }
+    let restoreBytes = null;
+    let restoreSecs = null;
+    if (warm) {
+      restoreSecs = restoreSeconds(job.steps);
+      restoreBytes = (readCache(join(artifactDir, 'cache.json')) ?? (oneBenchmarkJob ? readCache(join(ctx.artifactsDir, 'cache.json')) : null))?.restoreBytes ?? null;
     }
     rows.push({
       suite: ctx.suite,
       route: parsed.routeId,
       workload: parsed.workload,
       rep: parsed.rep,
+      cacheMode: parsed.cacheMode,
+      cacheBackend: ctx.routeCaches?.get(parsed.routeId) ?? null,
       runId: ctx.runId,
       runUrl: `https://github.com/${ctx.repo}/actions/runs/${ctx.runId}/attempts/${ctx.attempt}`,
       attempt: ctx.attempt,
@@ -178,13 +233,16 @@ export function buildRows(jobs, ctx, readFingerprint = readFingerprintFile) {
       jobCompletedAt: toIso(job.completed_at),
       setupSeconds: stepSeconds(job.steps, 'setup'),
       workSeconds: stepSeconds(job.steps, 'work'),
+      restoreSeconds: restoreSecs,
+      restoreBytes,
+      restoreMBps: restoreMBps(restoreBytes, restoreSecs),
       fingerprint,
       costUsd: null,
       headSha: typeof job.head_sha === 'string' && SHA_RE.test(job.head_sha) ? job.head_sha : null,
       jobId: Number.isSafeInteger(job.id) && job.id > 0 ? job.id : null,
     });
   }
-  rows.sort((a, b) => a.route.localeCompare(b.route) || a.workload.localeCompare(b.workload) || a.rep - b.rep);
+  rows.sort((a, b) => a.route.localeCompare(b.route) || a.workload.localeCompare(b.workload) || a.cacheMode.localeCompare(b.cacheMode) || a.rep - b.rep);
   return rows;
 }
 
@@ -259,6 +317,7 @@ async function main() {
     runId: env.runId,
     attempt: env.attempt,
     routeIds: readRouteIds(join(root, 'routes.json')),
+    routeCaches: readRouteCaches(join(root, 'routes.json')),
     workloadIds: readWorkloadIds(join(root, 'workloads')),
     artifactsDir,
     warn: (m) => console.error(`collect: ${m}`),

@@ -11,6 +11,9 @@ dir=$(bench_dir)
 # shellcheck disable=SC1091
 . "$dir/rust-env.sh"
 cd "$dir/rust-analyzer"
-rm -rf target
+# Cold builds from scratch. Warm keeps the restored target directory.
+if [ "${BENCH_CACHE_MODE:-cold}" != warm ]; then
+  rm -rf target
+fi
 cargo build --release --locked --offline --bin rust-analyzer
 ./target/release/rust-analyzer --version

@@ -5,7 +5,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   assertScheduledFreeBaseline,
+  assertCacheMode,
   assertScheduledSuite,
+  buildPrimeMatrix,
+  parseCacheMode,
   buildMatrix,
   listWorkloads,
   parseRepeats,
@@ -17,7 +20,7 @@ import {
 } from './plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const baseline = { id: 'github-hosted-4vcpu', provider: 'github', enabled: true, runsOn: 'ubuntu-24.04', image: 'ubuntu-24.04', vcpu: 4, memoryGb: 16 };
+const baseline = { id: 'github-hosted-4vcpu', provider: 'github', enabled: true, runsOn: 'ubuntu-24.04', image: 'ubuntu-24.04', vcpu: 4, memoryGb: 16, cacheBackend: 'github-actions-cache' };
 
 test('parseRepeats accepts 1 to 10 only', () => {
   assert.equal(parseRepeats('1'), 1);
@@ -214,4 +217,40 @@ test('default manual dispatch stays on the free baseline and does not enroll Dep
   const matrix = buildMatrix(selected, workloads, 1);
   assert.equal(matrix.include.length, 2);
   assert.ok(matrix.include.every((j) => j.route.id === 'github-hosted-4vcpu'));
+});
+
+test('cache mode: cold is the default, warm needs a recorded backend and never runs on the schedule', () => {
+  assert.equal(parseCacheMode(undefined), 'cold');
+  assert.equal(parseCacheMode(''), 'cold');
+  assert.equal(parseCacheMode('warm'), 'warm');
+  for (const bad of ['hot', 'Warm', 'warm ', 'cold;id']) assert.throws(() => parseCacheMode(bad), /cache mode/, bad);
+  const withBackend = { ...baseline, cacheBackend: 'github-actions-cache' };
+  assertCacheMode([baseline], 'cold');
+  assertCacheMode([withBackend], 'warm');
+  assert.throws(() => assertCacheMode([{ ...baseline, cacheBackend: null }], 'warm'), /no recorded cache backend/);
+  assert.throws(() => assertCacheMode([withBackend], 'warm', true), /cold only/);
+});
+
+test('matrix entries carry the mode and only warm gets priming jobs', () => {
+  const cold = buildMatrix([baseline], ['w1'], 2);
+  assert.deepEqual(cold.include.map((e) => e.mode), ['cold', 'cold']);
+  assert.equal(buildPrimeMatrix([baseline], ['w1'], 'cold').include.length, 0);
+  const warm = buildMatrix([baseline], ['w1'], 2, 'warm');
+  assert.deepEqual(warm.include.map((e) => e.mode), ['warm', 'warm']);
+  const prime = buildPrimeMatrix([baseline], ['w1', 'w2'], 'warm');
+  assert.deepEqual(prime.include.map((e) => e.workload), ['w1', 'w2']); // once per workload, not per repeat
+});
+
+test('routes.json records a cache backend field per route', () => {
+  const routes = readRoutes(join(root, 'routes.json'));
+  for (const r of routes) assert.ok(r.cacheBackend === null || /^[a-z0-9-]+$/.test(r.cacheBackend), r.id);
+  assert.equal(routes.find((r) => r.id === 'github-hosted-4vcpu').cacheBackend, 'github-actions-cache');
+});
+
+test('every workload with a priming script or cache list has cache paths', () => {
+  for (const w of listWorkloads(join(root, 'workloads'))) {
+    const list = readFileSync(join(root, 'workloads', w, 'cache-paths.txt'), 'utf8').split('\n').filter(Boolean);
+    assert.ok(list.length > 0, w);
+    for (const p of list) assert.ok(!p.startsWith('/') && !p.includes('..'), `${w}: ${p}`);
+  }
 });

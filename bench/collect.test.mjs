@@ -402,4 +402,6 @@ test('cache-size.sh sums the restored paths inside an Actions step (GITHUB_OUTPU
   execFileSync('bash', [script, 'rust-analyzer', out], { env: { ...process.env, BENCH_DIR: bench, GITHUB_OUTPUT: output }, stdio: 'pipe' });
   assert.ok(JSON.parse(readFileSync(out, 'utf8')).restoreBytes >= 4096);
   assert.equal(readFileSync(output, 'utf8'), '');
+  // A helper failure (unknown workload) fails the script instead of writing 0.
+  assert.throws(() => execFileSync('bash', [script, 'nope', join(dir, 'x.json')], { env: { ...process.env, BENCH_DIR: bench, GITHUB_OUTPUT: output }, stdio: 'pipe' }));
 });

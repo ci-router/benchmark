@@ -1,0 +1,24 @@
+{
+  "repo": "ci-router/benchmark",
+  "runId": 42975123095,
+  "attempt": 1,
+  "headSha": "7814cb053678c9c8b5b62fe725845cd84f225269",
+  "jobs": [
+    {
+      "jobId": 130372357195,
+      "name": "run github-hosted-4vcpu node-typescript 1",
+      "route": "github-hosted-4vcpu",
+      "archived": true,
+      "bytes": 25460,
+      "sha256": "3e25601e8d7b5721258ea8fa4fc162436119fef39fcaa380e0d2d4a81f093e2b"
+    },
+    {
+      "jobId": 130372357066,
+      "name": "run github-hosted-4vcpu rust-analyzer 1",
+      "route": "github-hosted-4vcpu",
+      "archived": true,
+      "bytes": 99758,
+      "sha256": "590b0550402315a0bc3174196e5a45815856372c5e538fcca70f147b53038c16"
+    }
+  ]
+}

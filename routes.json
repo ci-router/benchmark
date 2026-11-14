@@ -105,6 +105,42 @@
         "backend": null
       },
       "note": "Prepared from tenki.cloud/docs/runners/quickstart and tenki.cloud/docs/runners/x64-runners.md, checked 2026-11-09. The quickstart gives this 4-vCPU/8-GB label; Linux runners default to Ubuntu 24.04. Disabled until the actual repository has runner access, account size eligibility and publication terms are verified, cache/sticky-disk settings recorded, and collection spend is bounded. Sandbox API access is not hosted-runner access. The actual image and resources must be checked against the job fingerprint. Tenki Terms of Service section 4.2(iv) and Acceptable Use Policy section 3 (checked 2026-11-09) require prior written consent covering the intended benchmark and publication; verify that consent before execution. Account setup and runner access are not publication consent."
+    },
+    {
+      "id": "instabox-4vcpu",
+      "provider": "instabox",
+      "runsOn": "instabox-medium",
+      "vcpu": 4,
+      "memoryGb": 8,
+      "image": "ubuntu-24.04",
+      "enabled": true,
+      "hostedRunner": true,
+      "settings": {
+        "arch": null,
+        "cpuModel": null
+      },
+      "cache": {
+        "backend": null
+      },
+      "note": "Bounded external native Instabox pilot (the Instabox GitHub App was installed on this repository by the owner on 2026-11-14): one node-typescript canary, then rust-analyzer and two more serial repeats of each only if the observed charge matches the derived one. Label instabox-medium: 4 vCPU, 8 GiB, fresh Ubuntu 24.04 machine with the tools of GitHub's ubuntu-24.04 image (runner-images ubuntu24/20261026.354), usable on every plan including Free (instabox.sh/docs/ci.md, read 2026-11-14). Architecture is unknown: the docs do not state x86 for the ci template, so read the arch and CPU model the job's fingerprint reports; shared vs dedicated vCPUs is not stated either. Price $0.034/hour (about $0.000567/minute), derived from Instabox unit prices $0.004 per vCPU-hour and $0.00225 per GiB-hour of memory, metered by the second while the machine runs (instabox.sh/docs/pricing.md, read 2026-11-14): 4 x 0.004 + 8 x 0.00225. CI billing is not stated separately, pending invoice check against the observed charge; a 15-minute job estimates at most $0.0085. Paid plans include monthly credits, so the invoice may show the usage drawn from credits. Terms of Service (instabox.sh/terms, operated by InsForge, 'Last updated November 9, 2026', read 2026-11-14) contain no benchmark, comparison or publication clause; section 2(b)(iv) forbids circumventing usage limits, quotas, metering or billing controls, which this suite does not do. No hard billing cutoff is asserted; the 15-minute job timeout is not a billing cap."
+    },
+    {
+      "id": "instabox-2vcpu",
+      "provider": "instabox",
+      "runsOn": "instabox-small",
+      "vcpu": 2,
+      "memoryGb": 4,
+      "image": "ubuntu-24.04",
+      "enabled": false,
+      "hostedRunner": true,
+      "settings": {
+        "arch": null,
+        "cpuModel": null
+      },
+      "cache": {
+        "backend": null
+      },
+      "note": "Disabled: label instabox-small (2 vCPU, 4 GiB) is available only on the Pro, Builder and Team plans, not Free (instabox.sh/docs/ci.md, read 2026-11-14), so it needs the Pro plan ($20/month plus usage). Derived price $0.017/hour (2 x 0.004 + 4 x 0.00225) from the unit prices in pricing.md, not a stated CI rate. No measurement exists for this route and none is authorized. Re-enabling needs a fresh owner authorization, a plan check and the same invoice check as instabox-4vcpu."
     }
   ]
 }

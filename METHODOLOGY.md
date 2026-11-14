@@ -143,7 +143,7 @@ A route is one way of getting a runner:
   and are not scored.
 - **Providers with their own GitHub Actions integration**, using their own
   labels. This measures what a customer gets from that provider directly. The
-  bounded Depot 2-vCPU and Boat default (4-vCPU) pilots are the currently enabled native integrations. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
+  bounded Depot 2-vCPU, Boat default (4-vCPU) and Instabox 4-vCPU pilots are the currently enabled native integrations. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
   declared in `routes.json` with `"enabled": false`: it is Ubicloud's own hosted
   runner, and it stays out of the dispatch matrix until the Ubicloud GitHub App
   is installed on the organization. Its `settings` object (`premiumCpu`,
@@ -167,6 +167,17 @@ A route is one way of getting a runner:
   reports matters more than usual when reading its numbers. `boat-4vcpu` is at
   the reference size; `boat-2vcpu` is disabled and has no measurement.
   Neither archives job logs.
+  `instabox-4vcpu` (label `instabox-medium`, 4 vCPU, 8 GiB, Ubuntu 24.04 with the tools of
+  GitHub's `ubuntu-24.04` image) is Instabox's own hosted runner, enabled for explicit
+  one-workload, one-repeat dispatches after the owner installed its GitHub App on
+  2026-11-14 (docs: instabox.sh/docs/ci.md, read 2026-11-14). Its architecture, CPU model and
+  shared-versus-dedicated vCPUs are not documented, so they are read from each job's fingerprint
+  and never assumed. Instabox gives no separate CI rate: the $0.034/hour used here is derived
+  from its unit prices (instabox.sh/docs/pricing.md, read 2026-11-14) and is checked against the
+  observed invoice charge before more than the canary runs. Its Terms of Service
+  (instabox.sh/terms, last updated 2026-11-09) have no benchmark or publication clause.
+  `instabox-2vcpu` (label `instabox-small`) is disabled and needs the Pro plan. Neither archives
+  job logs.
 - **Router routes.** These come later. A router route can only be started from a
   manual or scheduled run on the default branch: the router refuses to place
   jobs from anything else, including a pull request from a fork. Not in stage 1.
@@ -384,7 +395,7 @@ cell whose coefficient of variation is above 15% is flagged as unstable.
 
 1. **Baseline:** GitHub-hosted measurements established the two-workload harness
    and recorded repeated-run variation.
-2. **Native provider pilots (current):** Depot 2-vCPU and Boat 4-vCPU pilots are enabled
+2. **Native provider pilots (current):** Depot 2-vCPU, Boat 4-vCPU and Instabox 4-vCPU pilots are enabled
    for explicit one-workload, one-repeat jobs. Other native routes remain disabled.
 3. Router routes, once the router's checks for these runs are in place.
 4. The full suite, a schedule and a results page, after each provider's terms

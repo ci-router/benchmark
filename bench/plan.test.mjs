@@ -93,9 +93,41 @@ test('the Boat routes are declared with their own labels and sizes', () => {
   assert.ok(!four.archiveLogs && !two.archiveLogs);
 });
 
+test('the Instabox routes are declared with their own labels, sizes and recorded price basis', () => {
+  const routeFile = JSON.parse(readFileSync(join(root, 'routes.json'), 'utf8')).routes;
+  const routes = readRoutes(join(root, 'routes.json'));
+  const four = routes.find((r) => r.id === 'instabox-4vcpu');
+  const two = routes.find((r) => r.id === 'instabox-2vcpu');
+  assert.ok(four && two);
+  assert.equal(four.runsOn, 'instabox-medium');
+  assert.equal(four.vcpu, 4);
+  assert.equal(four.memoryGb, 8);
+  assert.equal(four.enabled, true);
+  assert.equal(selectRoutes(routes, 'instabox-4vcpu')[0].id, four.id);
+  assert.equal(two.runsOn, 'instabox-small');
+  assert.equal(two.vcpu, 2);
+  assert.equal(two.memoryGb, 4);
+  assert.equal(two.enabled, false);
+  assert.throws(() => selectRoutes(routes, 'instabox-2vcpu'), /disabled/);
+  const raw = routeFile.find((r) => r.id === 'instabox-4vcpu');
+  assert.equal(raw.settings.arch, null, 'architecture is unknown until a job fingerprint reports it');
+  assert.match(raw.note, /\$0\.034\/hour/);
+  assert.match(raw.note, /pending invoice check/);
+  assert.match(routeFile.find((r) => r.id === 'instabox-2vcpu').note, /Pro plan/);
+  assert.ok(!raw.archiveLogs);
+});
+
+test('a paid Instabox dispatch needs one explicit workload and one repeat', () => {
+  const routes = readRoutes(join(root, 'routes.json'));
+  const selected = selectRoutes(routes, 'instabox-4vcpu');
+  assert.throws(() => selectWorkloads(selected, ['node-typescript', 'rust-analyzer'], 'all', 1), /explicit workload/);
+  assert.throws(() => selectWorkloads(selected, ['node-typescript', 'rust-analyzer'], 'node-typescript', 2), /one repetition/);
+  assert.deepEqual(selectWorkloads(selected, ['node-typescript', 'rust-analyzer'], 'node-typescript', 1), ['node-typescript']);
+});
+
 test('unqualified hosted routes remain disabled, including the documented Tenki configuration', () => {
   const routes = readRoutes(join(root, 'routes.json'));
-  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'boat-4vcpu']);
+  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'boat-4vcpu', 'instabox-4vcpu']);
   const tenki = routes.find((r) => r.id === 'tenki-hosted-4vcpu');
   assert.equal(tenki.runsOn, 'tenki-standard-medium-4c-8g');
   assert.equal(tenki.vcpu, 4);

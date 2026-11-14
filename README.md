@@ -6,7 +6,7 @@ different runners, with the duration, cost and reliability of each one.
 ## Status
 
 **Bounded external collection.** The GitHub-hosted baseline is the default.
-The Depot 2-vCPU route and Boat 4-vCPU (default) route are enabled only for explicit one-workload, one-repeat
+The Depot 2-vCPU, Boat 4-vCPU (default) and Instabox 4-vCPU routes are enabled only for explicit one-workload, one-repeat
 pilot dispatches. Other sizes, Ubicloud and Tenki remain disabled. A prior successful
 same-repository Depot run and the installed native App establish the pilot basis;
 the new job still exercises current repository/account admission.
@@ -77,7 +77,7 @@ yourself, fork it (below).
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
-| `routes.json` | The routes under test (GitHub default; explicit one-job Depot 2-vCPU and Boat 4-vCPU pilots enabled) |
+| `routes.json` | The routes under test (GitHub default; explicit one-job Depot 2-vCPU, Boat 4-vCPU and Instabox 4-vCPU pilots enabled) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
 | `.github/workflows/benchmark.yml` | The benchmark, manual or scheduled |
@@ -180,7 +180,7 @@ parallel jobs is not a durable budget enforcement mechanism.
 The default dispatch selects only `github-hosted-4vcpu`, even after other routes
 are enabled. Explicit selection stays subject to the route's `enabled` flag.
 Jobs have a 15-minute timeout and at most one matrix job runs at a time.
-The explicit Depot 2-vCPU and Boat 4-vCPU pilots are enabled alongside GitHub; other paid routes remain disabled. Each paid route still requires one explicit workload and one repetition.
+The explicit Depot 2-vCPU, Boat 4-vCPU and Instabox 4-vCPU pilots are enabled alongside GitHub; other paid routes remain disabled. Each paid route still requires one explicit workload and one repetition.
 
 Tenki's prepared label and resources come from its
 [runner quickstart](https://tenki.cloud/docs/runners/quickstart) and
@@ -235,3 +235,24 @@ estimates at most $0.009 of machine time, plus up to $0.07 for an extra start.
 This is an estimate, not an observed charge or a guaranteed billing cutoff.
 Native Boat owns sandbox teardown. No subscription is started or changed here.
 The six-hour schedule remains the free GitHub baseline only.
+
+### Native Instabox pilot
+
+`instabox-4vcpu` (label `instabox-medium`: 4 vCPU, 8 GiB, a fresh Ubuntu 24.04 machine with the
+tools of GitHub's `ubuntu-24.04` image; usable on every Instabox plan) is enabled for explicit
+one-workload, one-repeat dispatches, owner-authorized on 2026-11-14 after the Instabox GitHub
+App was installed on this repository. Sequence: one `node-typescript` canary, then, only if the
+observed Instabox charge matches the derived one within rounding, `rust-analyzer` and two more
+serial repeats of each workload (each its own dispatch with `repeats=1`; no retry). A job that is
+never picked up or is refused is not a measurement and stops the pilot.
+
+Instabox publishes no separate CI rate. The price used here, $0.034/hour (about $0.000567/minute),
+is derived from its unit prices of $0.004 per vCPU-hour and $0.00225 per GiB-hour of memory,
+metered by the second while the machine runs (https://instabox.sh/docs/pricing.md, read
+2026-11-14): 4 x $0.004 + 8 x $0.00225. A 15-minute job therefore estimates at most $0.0085.
+This is a derived estimate, pending an invoice check; the observed charge is recorded in
+`routes.json` once known. The architecture and CPU model are not documented: they are read from
+each job's fingerprint, not assumed. Instabox's Terms of Service (https://instabox.sh/terms,
+last updated 2026-11-09, read 2026-11-14) have no benchmark, comparison or publication clause;
+section 2(b)(iv) forbids circumventing metering or billing controls, which this suite does not do.
+`instabox-2vcpu` (label `instabox-small`) is disabled: it needs the Pro plan.

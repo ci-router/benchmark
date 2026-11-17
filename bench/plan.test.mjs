@@ -127,7 +127,7 @@ test('a paid Instabox dispatch needs one explicit workload and one repeat', () =
 
 test('unqualified hosted routes remain disabled, including the documented Tenki configuration', () => {
   const routes = readRoutes(join(root, 'routes.json'));
-  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'boat-4vcpu', 'instabox-4vcpu']);
+  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'depot-ubuntu-4vcpu', 'boat-4vcpu', 'instabox-4vcpu']);
   const tenki = routes.find((r) => r.id === 'tenki-hosted-4vcpu');
   assert.equal(tenki.runsOn, 'tenki-standard-medium-4c-8g');
   assert.equal(tenki.vcpu, 4);

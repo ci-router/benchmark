@@ -52,12 +52,12 @@
       "vcpu": 4,
       "memoryGb": 16,
       "image": "ubuntu-24.04",
-      "enabled": false,
+      "enabled": true,
       "hostedRunner": true,
       "cache": {
         "backend": "depot-cache"
       },
-      "note": "Collection disabled pending repository access, publication terms and bounded spend verification. Depot's own hosted runner (label depot-ubuntu-24.04-4: 4 vCPU, 16 GB, x86 on AWS EC2, $0.012 per minute per depot.dev/docs/github-actions/runner-types, read 2026-11-08), the like-for-like match for github-hosted-4vcpu. Same Depot App and terms as depot-ubuntu-2vcpu."
+      "note": "Depot hosted runner (label depot-ubuntu-24.04-4: 4 vCPU, 16 GB, x86 on AWS EC2, $0.012 per minute, per-second usage with no one-minute minimum, per depot.dev/docs/github-actions/runner-types and /overview, read 2026-11-08). The like-for-like match for github-hosted-4vcpu, using the same native Depot App installation 179933674 as depot-ubuntu-2vcpu; prior run 42524142120 succeeded on this label. Enabled 2026-11-17 for owner-authorized cold sample collection (at least five per workload, one explicit workload and one repetition per dispatch, serial, no retry until success); the earlier daily budget cap was removed by the owner. No hard billing cutoff is asserted; the 15-minute job timeout is not a billing cap."
     },
     {
       "id": "boat-4vcpu",

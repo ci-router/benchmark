@@ -18,6 +18,10 @@ TS_COMMIT="1e4744d68260a7cb91b62b12edc3f6a2187faaf1"
 dir=$(bench_dir)
 mkdir -p -- "$dir"
 dir=$(cd -P -- "$dir" >/dev/null && pwd -P)
+if [[ "$dir" == *:* ]]; then
+  echo "BENCH_DIR must not contain ':' because it is added to PATH" >&2
+  exit 1
+fi
 lock="$dir/.node-typescript-setup.lock"
 if ! mkdir -m 700 -- "$lock"; then
   echo "cannot claim BENCH_DIR: setup may be in progress; use a fresh BENCH_DIR" >&2

@@ -21,10 +21,9 @@ function run(command, args, options = {}) {
   return spawnSync(command, args, { encoding: 'utf8', timeout: 10_000, ...options });
 }
 
-function fixture(t, fault = '', arch = 'x64') {
+function fixture(t, fault = '', arch = 'x64', dir = "bench with spaces ' $HOME") {
   const root = mkdtempSync(join(tmpdir(), 'benchmark-setup-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const dir = "bench with spaces ' $HOME";
   const bench = join(root, dir);
   const shell = join(root, 'fake-bin');
   const archive = join(root, 'fixture.tar.gz');
@@ -177,4 +176,15 @@ test('a competing setup cannot touch outputs or acquire the active claim', linux
   assert.match(readFileSync(join(f.root, 'contender.log'), 'utf8'), /setup.*in progress/);
   assert.equal(existsSync(f.marker), true);
   assertClean(f);
+});
+
+test('refuses a BENCH_DIR containing the PATH delimiter before touching it', linux, (t) => {
+  const f = fixture(t, '', 'x64', 'bench:with:colons');
+  const result = f.setup();
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /must not contain ':'/);
+  assert.deepEqual(readdirSync(f.bench), ['npm-cache']);
+  assert.equal(existsSync(f.marker), false);
+  assert.equal(existsSync(f.npmCi), false);
+  assert.doesNotMatch(result.stderr, /unexpected host tool/);
 });

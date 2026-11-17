@@ -1,0 +1,338 @@
+{
+  "total_count": 4,
+  "jobs": [
+    {
+      "id": 134335829427,
+      "run_id": 44167058880,
+      "workflow_name": "benchmark",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/ci-router/benchmark/actions/runs/44167058880",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOVlNPg88AAAAfRwoVsw",
+      "head_sha": "d81a5ec33160db2b6ffb47fc3ded11267d9d525e",
+      "url": "https://api.github.com/repos/ci-router/benchmark/actions/jobs/134335829427",
+      "html_url": "https://github.com/ci-router/benchmark/actions/runs/44167058880/job/134335829427",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-17T20:13:47Z",
+      "started_at": "2026-11-17T20:13:49Z",
+      "completed_at": "2026-11-17T20:13:55Z",
+      "name": "plan",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-17T20:13:50Z",
+          "completed_at": "2026-11-17T20:13:50Z"
+        },
+        {
+          "name": "checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-17T20:13:50Z",
+          "completed_at": "2026-11-17T20:13:51Z"
+        },
+        {
+          "name": "node",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-17T20:13:51Z",
+          "completed_at": "2026-11-17T20:13:52Z"
+        },
+        {
+          "name": "validate benchmark scripts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-17T20:13:52Z",
+          "completed_at": "2026-11-17T20:13:52Z"
+        },
+        {
+          "name": "matrix",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-17T20:13:52Z",
+          "completed_at": "2026-11-17T20:13:52Z"
+        },
+        {
+          "name": "Post node",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-17T20:13:52Z",
+          "completed_at": "2026-11-17T20:13:52Z"
+        },
+        {
+          "name": "Post checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-17T20:13:52Z",
+          "completed_at": "2026-11-17T20:13:52Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-17T20:13:52Z",
+          "completed_at": "2026-11-17T20:13:53Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/ci-router/benchmark/check-runs/134335829427",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000001236,
+      "runner_name": "GitHub Actions 1000001236",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 134335912914,
+      "run_id": 44167058880,
+      "workflow_name": "benchmark",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/ci-router/benchmark/actions/runs/44167058880",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOVlNPg88AAAAfRwtb0g",
+      "head_sha": "d81a5ec33160db2b6ffb47fc3ded11267d9d525e",
+      "url": "https://api.github.com/repos/ci-router/benchmark/actions/jobs/134335912914",
+      "html_url": "https://github.com/ci-router/benchmark/actions/runs/44167058880/job/134335912914",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-17T20:13:55Z",
+      "started_at": "2026-11-17T20:13:56Z",
+      "completed_at": "2026-11-17T20:18:12Z",
+      "name": "run depot-ubuntu-4vcpu rust-analyzer 1",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-17T20:14:15Z",
+          "completed_at": "2026-11-17T20:14:18Z"
+        },
+        {
+          "name": "checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-17T20:14:18Z",
+          "completed_at": "2026-11-17T20:14:23Z"
+        },
+        {
+          "name": "fingerprint",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-17T20:14:23Z",
+          "completed_at": "2026-11-17T20:14:23Z"
+        },
+        {
+          "name": "cache paths",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 4,
+          "started_at": "2026-11-17T20:14:23Z",
+          "completed_at": "2026-11-17T20:14:23Z"
+        },
+        {
+          "name": "restore cache",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 5,
+          "started_at": "2026-11-17T20:14:23Z",
+          "completed_at": "2026-11-17T20:14:23Z"
+        },
+        {
+          "name": "measure restore",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 6,
+          "started_at": "2026-11-17T20:14:23Z",
+          "completed_at": "2026-11-17T20:14:23Z"
+        },
+        {
+          "name": "setup",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-17T20:14:23Z",
+          "completed_at": "2026-11-17T20:14:35Z"
+        },
+        {
+          "name": "work",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-11-17T20:14:35Z",
+          "completed_at": "2026-11-17T20:18:10Z"
+        },
+        {
+          "name": "upload fingerprint",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-17T20:18:10Z",
+          "completed_at": "2026-11-17T20:18:10Z"
+        },
+        {
+          "name": "Post checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-11-17T20:18:10Z",
+          "completed_at": "2026-11-17T20:18:11Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-11-17T20:18:11Z",
+          "completed_at": "2026-11-17T20:18:11Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/ci-router/benchmark/check-runs/134335912914",
+      "labels": [
+        "depot-ubuntu-24.04-4"
+      ],
+      "runner_id": 885,
+      "runner_name": "depot-fnb20t5c7v",
+      "runner_group_id": 1,
+      "runner_group_name": "default"
+    },
+    {
+      "id": 134335916589,
+      "run_id": 44167058880,
+      "workflow_name": "benchmark",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/ci-router/benchmark/actions/runs/44167058880",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOVlNPg88AAAAfRwtqLQ",
+      "head_sha": "d81a5ec33160db2b6ffb47fc3ded11267d9d525e",
+      "url": "https://api.github.com/repos/ci-router/benchmark/actions/jobs/134335916589",
+      "html_url": "https://github.com/ci-router/benchmark/actions/runs/44167058880/job/134335916589",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-11-17T20:13:55Z",
+      "started_at": "2026-11-17T20:13:55Z",
+      "completed_at": "2026-11-17T20:13:55Z",
+      "name": "prime ${{ matrix.route.id }} ${{ matrix.workload }}",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/ci-router/benchmark/check-runs/134335916589",
+      "labels": [],
+      "runner_id": null,
+      "runner_name": null,
+      "runner_group_id": null,
+      "runner_group_name": null
+    },
+    {
+      "id": 134338636770,
+      "run_id": 44167058880,
+      "workflow_name": "benchmark",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/ci-router/benchmark/actions/runs/44167058880",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOVlNPg88AAAAfRzTr4g",
+      "head_sha": "d81a5ec33160db2b6ffb47fc3ded11267d9d525e",
+      "url": "https://api.github.com/repos/ci-router/benchmark/actions/jobs/134338636770",
+      "html_url": "https://github.com/ci-router/benchmark/actions/runs/44167058880/job/134338636770",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-17T20:18:12Z",
+      "started_at": "2026-11-17T20:18:14Z",
+      "completed_at": null,
+      "name": "collect",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-17T20:18:14Z",
+          "completed_at": "2026-11-17T20:18:15Z"
+        },
+        {
+          "name": "checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-17T20:18:15Z",
+          "completed_at": "2026-11-17T20:18:16Z"
+        },
+        {
+          "name": "node",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-17T20:18:16Z",
+          "completed_at": "2026-11-17T20:18:17Z"
+        },
+        {
+          "name": "download fingerprints",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-17T20:18:17Z",
+          "completed_at": "2026-11-17T20:18:17Z"
+        },
+        {
+          "name": "collect",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-17T20:18:17Z",
+          "completed_at": "2026-11-17T20:18:18Z"
+        },
+        {
+          "name": "archive raw data",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 6,
+          "started_at": "2026-11-17T20:18:18Z",
+          "completed_at": null
+        },
+        {
+          "name": "publish to the results branch",
+          "status": "pending",
+          "conclusion": null,
+          "number": 7,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post node",
+          "status": "pending",
+          "conclusion": null,
+          "number": 13,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post checkout",
+          "status": "pending",
+          "conclusion": null,
+          "number": 14,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/ci-router/benchmark/check-runs/134338636770",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000001237,
+      "runner_name": "GitHub Actions 1000001237",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}

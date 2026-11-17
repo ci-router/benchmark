@@ -1,0 +1,15 @@
+{
+  "repo": "ci-router/benchmark",
+  "runId": 44159132383,
+  "attempt": 1,
+  "headSha": "d81a5ec33160db2b6ffb47fc3ded11267d9d525e",
+  "jobs": [
+    {
+      "jobId": 134308030201,
+      "name": "run instabox-4vcpu rust-analyzer 1",
+      "route": "instabox-4vcpu",
+      "archived": false,
+      "reason": "route-not-enabled"
+    }
+  ]
+}

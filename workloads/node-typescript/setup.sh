@@ -16,7 +16,45 @@ TS_TAG="v7.0.2"
 TS_COMMIT="1e4744d68260a7cb91b62b12edc3f6a2187faaf1"
 
 dir=$(bench_dir)
-mkdir -p "$dir"
+mkdir -p -- "$dir"
+dir=$(cd -P -- "$dir" >/dev/null && pwd -P)
+if [[ "$dir" == *:* ]]; then
+  echo "BENCH_DIR must not contain ':' because it is added to PATH" >&2
+  exit 1
+fi
+lock="$dir/.node-typescript-setup.lock"
+if ! mkdir -m 700 -- "$lock"; then
+  echo "cannot claim BENCH_DIR: setup may be in progress; use a fresh BENCH_DIR" >&2
+  exit 1
+fi
+stage=
+cleanup() {
+  if [[ -n "$stage" ]] && ! rm -rf -- "$stage"; then
+    echo "could not remove Node staging directory" >&2
+  fi
+  if ! rmdir -- "$lock"; then
+    echo "could not release Node setup claim" >&2
+  fi
+}
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+for path in node typescript node-env.sh; do
+  if [[ -e "$dir/$path" || -L "$dir/$path" ]]; then
+    echo "$path already exists; use a fresh BENCH_DIR" >&2
+    exit 1
+  fi
+done
+
+publish_new() {
+  mv -nT -- "$1" "$2"
+  if [[ -e "$1" ]]; then
+    echo "setup destination already exists; use a fresh BENCH_DIR" >&2
+    return 1
+  fi
+}
 
 ensure_cmd curl curl
 ensure_cmd git git
@@ -40,21 +78,35 @@ case "$(uname -m)" in
 esac
 
 tarball="node-v${NODE_VERSION}-linux-${node_arch}.tar.gz"
-curl --proto '=https' --tlsv1.2 -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${tarball}" -o "$dir/$tarball"
-echo "${node_sha}  $dir/$tarball" | sha256sum -c - >/dev/null
-rm -rf "$dir/node"
-mkdir -p "$dir/node"
-tar -xzf "$dir/$tarball" -C "$dir/node" --strip-components=1
-rm -f "$dir/$tarball"
+stage=$(mktemp -d "$dir/.node-stage.XXXXXXXX")
+(
+  cd -- "$stage"
+  curl --proto '=https' --tlsv1.2 -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${tarball}" -o "$tarball"
+  printf '%s  %s\n' "$node_sha" "$tarball" | sha256sum -c - >/dev/null
+  mkdir node
+  tar -xzf "$tarball" -C node --strip-components=1
+  rm -- "$tarball"
+)
 
-# work.sh sources this file to find node.
-cat >"$dir/node-env.sh" <<ENVEOF
-export PATH="$dir/node/bin:\$PATH"
-ENVEOF
+bin="$stage/node/bin"
+for tool in node npm npx; do
+  if [[ ! -f "$bin/$tool" || ! -x "$bin/$tool" ]]; then
+    echo "Node archive is missing executable $tool" >&2
+    exit 1
+  fi
+done
+node_version=$("$bin/node" --version)
+if [[ "$node_version" != "v$NODE_VERSION" ]]; then
+  echo "Node archive does not run the pinned version" >&2
+  exit 1
+fi
+npm_version=$(PATH="$bin:$PATH" "$bin/npm" --version)
+PATH="$bin:$PATH" "$bin/npx" --version >/dev/null
+publish_new "$stage/node" "$dir/node"
+printf 'export PATH=%q:%s\n' "$dir/node/bin" "\$PATH" >"$stage/node-env.sh"
 
 src="$dir/typescript"
-rm -rf "$src"
-mkdir -p "$src"
+mkdir -- "$src"
 git -C "$src" init -q
 git -C "$src" remote add origin "$TS_REPO"
 git -C "$src" fetch -q --depth 1 origin "$TS_COMMIT"
@@ -66,9 +118,10 @@ if [ "$head" != "$TS_COMMIT" ]; then
 fi
 
 # shellcheck disable=SC1091
-. "$dir/node-env.sh"
+. "$stage/node-env.sh"
 cd "$src"
 # Kept under the bench directory so warm mode can save and restore it.
 export npm_config_cache="$dir/npm-cache"
-npm ci --no-audit --no-fund
-echo "setup done: node $(node --version), npm $(npm --version), TypeScript $TS_TAG at $head"
+"$dir/node/bin/npm" ci --no-audit --no-fund
+printf 'setup verified: node %s, npm %s, TypeScript %s at %s\n' "$node_version" "$npm_version" "$TS_TAG" "$head"
+publish_new "$stage/node-env.sh" "$dir/node-env.sh"

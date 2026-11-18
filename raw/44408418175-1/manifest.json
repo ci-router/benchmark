@@ -1,0 +1,15 @@
+{
+  "repo": "ci-router/benchmark",
+  "runId": 44408418175,
+  "attempt": 1,
+  "headSha": "35eac0328bc138182155e20b67f1cb68b6f5b087",
+  "jobs": [
+    {
+      "jobId": 135169886144,
+      "name": "run blacksmith-hosted-4vcpu rust-analyzer 1",
+      "route": "blacksmith-hosted-4vcpu",
+      "archived": false,
+      "reason": "route-not-enabled"
+    }
+  ]
+}

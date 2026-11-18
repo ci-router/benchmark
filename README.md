@@ -126,8 +126,21 @@ the default branch, so a pull request from a fork cannot start paid compute.
 - The code in this repository (scripts, workflows, workload definitions and
   tests) is licensed under the [Apache License 2.0](LICENSE).
 - The results and the raw data on the `results` branch are licensed under
-  [Creative Commons Attribution 4.0 International](LICENSE-RESULTS) (CC-BY-4.0).
-  Attribute them to "ci-router benchmark".
+  [Creative Commons Attribution 4.0 International](LICENSE-RESULTS) (CC BY 4.0).
+  This covers the result rows and the raw files.
+  `LICENSE-RESULTS` holds the official legal text and is also on the `results` branch.
+
+### How to credit the data
+
+Credit CI Router and link to this repository and to the licence. You can copy this line:
+
+> Data: [CI Router benchmark](https://github.com/ci-router/benchmark) by
+> [CI Router](https://ci-router.com), licensed under
+> [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+If you changed the data, for example by filtering or re-scoring it, say so next to
+the credit. Name the suite version and the date you read the rows, so readers can
+find the same data.
 
 ## Recurring samples
 

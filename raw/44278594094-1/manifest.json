@@ -1,0 +1,15 @@
+{
+  "repo": "ci-router/benchmark",
+  "runId": 44278594094,
+  "attempt": 1,
+  "headSha": "b5a4b61c81121127529a2acd76702b538737e82f",
+  "jobs": [
+    {
+      "jobId": 134713182625,
+      "name": "run namespace-hosted-4vcpu node-typescript 1",
+      "route": "namespace-hosted-4vcpu",
+      "archived": false,
+      "reason": "route-not-enabled"
+    }
+  ]
+}

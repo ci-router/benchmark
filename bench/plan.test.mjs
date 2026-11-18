@@ -125,9 +125,35 @@ test('a paid Instabox dispatch needs one explicit workload and one repeat', () =
   assert.deepEqual(selectWorkloads(selected, ['node-typescript', 'rust-analyzer'], 'node-typescript', 1), ['node-typescript']);
 });
 
+test('the Namespace and Celesto routes are their own 4 vCPU identities with pinned labels and list prices', () => {
+  const routeFile = JSON.parse(readFileSync(join(root, 'routes.json'), 'utf8')).routes;
+  const routes = readRoutes(join(root, 'routes.json'));
+  for (const [id, provider, runsOn, price] of [
+    ['namespace-hosted-4vcpu', 'namespace', 'nscloud-ubuntu-24.04-amd64-4x16', /\$0\.012 per minute/],
+    ['celesto-hosted-4vcpu', 'celesto', 'celesto-large', /\$0\.08 per hour/],
+  ]) {
+    const route = routes.find((r) => r.id === id);
+    assert.ok(route, id);
+    assert.equal(route.provider, provider);
+    assert.equal(route.runsOn, runsOn);
+    assert.equal(route.vcpu, 4);
+    assert.equal(route.memoryGb, 16);
+    assert.equal(route.image, 'ubuntu-24.04');
+    assert.equal(route.cacheBackend, null);
+    assert.throws(() => assertCacheMode([route], 'warm'), /no recorded cache backend/);
+    const selected = selectRoutes(routes, id);
+    assert.throws(() => selectWorkloads(selected, ['node-typescript', 'rust-analyzer'], 'all', 1), /explicit workload/);
+    assert.throws(() => selectWorkloads(selected, ['node-typescript', 'rust-analyzer'], 'node-typescript', 2), /one repetition/);
+    const raw = routeFile.find((r) => r.id === id);
+    assert.match(raw.note, price);
+    assert.match(raw.note, /read 2026-11-18/);
+    assert.ok(!raw.archiveLogs);
+  }
+});
+
 test('unqualified hosted routes remain disabled, including the documented Tenki configuration', () => {
   const routes = readRoutes(join(root, 'routes.json'));
-  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'depot-ubuntu-4vcpu', 'boat-4vcpu', 'instabox-4vcpu']);
+  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'depot-ubuntu-4vcpu', 'boat-4vcpu', 'instabox-4vcpu', 'namespace-hosted-4vcpu', 'celesto-hosted-4vcpu']);
   const tenki = routes.find((r) => r.id === 'tenki-hosted-4vcpu');
   assert.equal(tenki.runsOn, 'tenki-standard-medium-4c-8g');
   assert.equal(tenki.vcpu, 4);

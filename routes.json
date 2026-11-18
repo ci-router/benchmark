@@ -141,6 +141,40 @@
         "backend": null
       },
       "note": "Disabled: label instabox-small (2 vCPU, 4 GiB) is available only on the Pro, Builder and Team plans, not Free (instabox.sh/docs/ci.md, read 2026-11-14), so it needs the Pro plan ($20/month plus usage). Derived price $0.017/hour (2 x 0.004 + 4 x 0.00225) from the unit prices in pricing.md, not a stated CI rate. No measurement exists for this route and none is authorized. Re-enabling needs a fresh owner authorization, a plan check and the same invoice check as instabox-4vcpu."
+    },
+    {
+      "id": "namespace-hosted-4vcpu",
+      "provider": "namespace",
+      "runsOn": "nscloud-ubuntu-24.04-amd64-4x16",
+      "vcpu": 4,
+      "memoryGb": 16,
+      "image": "ubuntu-24.04",
+      "enabled": true,
+      "hostedRunner": true,
+      "settings": {
+        "cacheVolume": false
+      },
+      "cache": {
+        "backend": null
+      },
+      "note": "Namespace managed GitHub runner (label nscloud-ubuntu-24.04-amd64-4x16: Ubuntu 24.04, amd64, 4 vCPU, 16 GB; no -with-cache suffix, so no cache volume; label grammar from namespace.so/docs/reference/github-actions/runner-configuration, 4x16 shape from namespace.so/docs/architecture/compute/machine-shapes, read 2026-11-18), through the namespace-managed-runners App installation 183112299 on ci-router. Owner-authorized (Sylvain, 2026-11-18, 'Publish both') public cold sample collection: one explicit workload and one repetition per dispatch, serial, no retry until success, at least five successes per workload. List price $0.012 per minute: Linux 4 vCPU 16 GB is 8 unit-minutes per minute, overage column, applied to the pay-per-use Developer plan, which states no separate rate (the Team plan's prepaid effective rate is $0.008); one-minute minimum, a remainder of 15 seconds or less rounds down (namespace.so/pricing.md, read 2026-11-18). Not invoice-checked. Terms of Service (namespace.so/terms, last changed 2024-08-10, valid 2024-08-31) have no benchmark or publication clause; section 4 limits use to 'internal, personal, non-commercial use', section 6 forbids reverse engineering; the owner decided publication with that known. Private samples from ci-router/benchmark-private (private-namespace-native.yml) are a separate population and are never merged into this route's rows. No hard billing cutoff is asserted; the 15-minute job timeout is not a billing cap."
+    },
+    {
+      "id": "celesto-hosted-4vcpu",
+      "provider": "celesto",
+      "runsOn": "celesto-large",
+      "vcpu": 4,
+      "memoryGb": 16,
+      "image": "ubuntu-24.04",
+      "enabled": true,
+      "hostedRunner": true,
+      "settings": {
+        "transparentCache": null
+      },
+      "cache": {
+        "backend": null
+      },
+      "note": "Celesto CI runner (label celesto-large: 4 vCPU, 16 GB, 60 GB disk, Ubuntu 24.04 Linux x64 on Celesto's own CI image, not GitHub's; celesto.ai/docs/ci, read 2026-11-18), through the celesto-ci App installation 183115781 on ci-router, linked to a billing workspace with paid credit (the trial covers Micro only). Owner-authorized (Sylvain, 2026-11-18, 'Publish both') public cold sample collection: one explicit workload and one repetition per dispatch, serial, no retry until success, at least five successes per workload. List price $0.08 per hour ($0.00133333 per minute); Celesto bills computer runtime including preparation and cleanup, so a job-window estimate understates the charge, and rounding is not stated (celesto.ai/docs/ci, read 2026-11-18). Not invoice-checked. Shared CPU models vary: private samples saw Intel Xeon Platinum 8375C and AMD EPYC-Milan, so read each job's fingerprint. Celesto serves the GitHub Actions cache itself; cold jobs never call it, and warm mode stays blocked because the backend is unrecorded. Terms (celesto.ai/legal/terms, last updated 2026-10-30) have no benchmark or publication clause; section 3 forbids reverse engineering, interfering with or disrupting the services. Private samples from ci-router/benchmark-private (private-celesto-native.yml) are a separate population and are never merged into this route's rows. No hard billing cutoff is asserted; the 15-minute job timeout is not a billing cap."
     }
   ]
 }

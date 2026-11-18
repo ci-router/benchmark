@@ -143,7 +143,7 @@ A route is one way of getting a runner:
   and are not scored.
 - **Providers with their own GitHub Actions integration**, using their own
   labels. This measures what a customer gets from that provider directly. The
-  bounded Depot 2-vCPU, Boat default (4-vCPU) and Instabox 4-vCPU pilots are the currently enabled native integrations. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
+  bounded Depot 2-vCPU and 4-vCPU, Boat default (4-vCPU), Instabox 4-vCPU, Namespace 4-vCPU (label `nscloud-ubuntu-24.04-amd64-4x16`) and Celesto 4-vCPU (label `celesto-large`) pilots are the currently enabled native integrations. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
   declared in `routes.json` with `"enabled": false`: it is Ubicloud's own hosted
   runner, and it stays out of the dispatch matrix until the Ubicloud GitHub App
   is installed on the organization. Its `settings` object (`premiumCpu`,
@@ -395,7 +395,7 @@ cell whose coefficient of variation is above 15% is flagged as unstable.
 
 1. **Baseline:** GitHub-hosted measurements established the two-workload harness
    and recorded repeated-run variation.
-2. **Native provider pilots (current):** Depot 2-vCPU, Boat 4-vCPU and Instabox 4-vCPU pilots are enabled
+2. **Native provider pilots (current):** Depot 2-vCPU and 4-vCPU, Boat 4-vCPU, Instabox 4-vCPU, Namespace 4-vCPU and Celesto 4-vCPU pilots are enabled
    for explicit one-workload, one-repeat jobs. Other native routes remain disabled.
 3. Router routes, once the router's checks for these runs are in place.
 4. The full suite, a schedule and a results page, after each provider's terms

@@ -1,0 +1,15 @@
+{
+  "repo": "ci-router/benchmark",
+  "runId": 44269076010,
+  "attempt": 1,
+  "headSha": "07c8b064a611256536266ec317b1556edcc70961",
+  "jobs": [
+    {
+      "jobId": 134680978261,
+      "name": "run namespace-hosted-4vcpu rust-analyzer 1",
+      "route": "namespace-hosted-4vcpu",
+      "archived": false,
+      "reason": "route-not-enabled"
+    }
+  ]
+}

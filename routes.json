@@ -175,6 +175,20 @@
         "backend": null
       },
       "note": "Celesto CI runner (label celesto-large: 4 vCPU, 16 GB, 60 GB disk, Ubuntu 24.04 Linux x64 on Celesto's own CI image, not GitHub's; celesto.ai/docs/ci, read 2026-11-18), through the celesto-ci App installation 183115781 on ci-router, linked to a billing workspace with paid credit (the trial covers Micro only). Owner-authorized (Sylvain, 2026-11-18, 'Publish both') public cold sample collection: one explicit workload and one repetition per dispatch, serial, no retry until success, at least five successes per workload. List price $0.08 per hour ($0.00133333 per minute); Celesto bills computer runtime including preparation and cleanup, so a job-window estimate understates the charge, and rounding is not stated (celesto.ai/docs/ci, read 2026-11-18). Not invoice-checked. Shared CPU models vary: private samples saw Intel Xeon Platinum 8375C and AMD EPYC-Milan, so read each job's fingerprint. Celesto serves the GitHub Actions cache itself; cold jobs never call it, and warm mode stays blocked because the backend is unrecorded. Terms (celesto.ai/legal/terms, last updated 2026-10-30) have no benchmark or publication clause; section 3 forbids reverse engineering, interfering with or disrupting the services. Private samples from ci-router/benchmark-private (private-celesto-native.yml) are a separate population and are never merged into this route's rows. No hard billing cutoff is asserted; the 15-minute job timeout is not a billing cap."
+    },
+    {
+      "id": "blacksmith-hosted-4vcpu",
+      "provider": "blacksmith",
+      "runsOn": "blacksmith-4vcpu-ubuntu-2404",
+      "vcpu": 4,
+      "memoryGb": 16,
+      "image": "ubuntu-24.04",
+      "enabled": true,
+      "hostedRunner": true,
+      "cache": {
+        "backend": null
+      },
+      "note": "Blacksmith hosted runner (label blacksmith-4vcpu-ubuntu-2404: Ubuntu 24.04 x64, 4 vCPU, 16 GB, 80 GB; booted from GitHub's runner image; docs.blacksmith.sh/blacksmith-runners/overview, read 2026-11-18), through the blacksmith-sh App installation 183472736 on ci-router. Owner-authorized (Sylvain, 2026-11-18) public cold sample collection: one explicit workload and one repetition per dispatch, serial, no retry until success, at least five successes per workload. List price $0.008 per minute for Linux x64 4 vCPU (blacksmith.sh/pricing and docs.blacksmith.sh/blacksmith-runners/flex-scheduling, read 2026-11-18); the 3,000 free 2 vCPU minutes per month are ignored and every job is priced at list. Blacksmith publishes no rounding or minimum rule. Blacksmith may upgrade a runner to the next size at no cost when it has spare capacity, so read each job's fingerprint vcpus. Blacksmith redirects actions/cache to its own co-located cache; cold jobs never call it, and warm mode stays blocked because the backend is unrecorded. Not invoice-checked. Terms of Service (docs.blacksmith.sh/about/terms-of-service, effective 2026-07-20) have no benchmark, comparison or publication clause and no separate acceptable use policy is published; section 3 forbids reverse engineering or attempting to derive source code or trade secrets, security or vulnerability tests, and causing performance degradation; the owner decided publication regardless of terms. No hard billing cutoff is asserted; the 15-minute job timeout is not a billing cap."
     }
   ]
 }

@@ -6,7 +6,7 @@ different runners, with the duration, cost and reliability of each one.
 ## Status
 
 **Bounded external collection.** The GitHub-hosted baseline is the default.
-The Depot 2-vCPU and 4-vCPU, Boat 4-vCPU (default), Instabox 4-vCPU, Namespace 4-vCPU and Celesto 4-vCPU routes are enabled only for explicit one-workload, one-repeat
+The Depot 2-vCPU and 4-vCPU, Boat 4-vCPU (default), Instabox 4-vCPU, Namespace 4-vCPU, Celesto 4-vCPU and Blacksmith 4-vCPU routes are enabled only for explicit one-workload, one-repeat
 pilot dispatches. Other sizes, Ubicloud and Tenki remain disabled. A prior successful
 same-repository Depot run and the installed native App establish the pilot basis;
 the new job still exercises current repository/account admission.
@@ -77,7 +77,7 @@ yourself, fork it (below).
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
-| `routes.json` | The routes under test (GitHub default; explicit one-job Depot 2- and 4-vCPU, Boat, Instabox, Namespace and Celesto 4-vCPU pilots enabled) |
+| `routes.json` | The routes under test (GitHub default; explicit one-job Depot 2- and 4-vCPU, Boat, Instabox, Namespace, Celesto and Blacksmith 4-vCPU pilots enabled) |
 | `workloads/<name>/setup.sh`, `work.sh` | Install the toolchain and dependencies, then do the timed work |
 | `bench/` | Fingerprint, planning, collection and scoring scripts, and their tests |
 | `.github/workflows/benchmark.yml` | The benchmark, manual or scheduled |
@@ -193,7 +193,7 @@ parallel jobs is not a durable budget enforcement mechanism.
 The default dispatch selects only `github-hosted-4vcpu`, even after other routes
 are enabled. Explicit selection stays subject to the route's `enabled` flag.
 Jobs have a 15-minute timeout and at most one matrix job runs at a time.
-The explicit Depot 2-vCPU and 4-vCPU, Boat 4-vCPU, Instabox 4-vCPU, Namespace 4-vCPU and Celesto 4-vCPU pilots are enabled alongside GitHub; other paid routes remain disabled. Each paid route still requires one explicit workload and one repetition.
+The explicit Depot 2-vCPU and 4-vCPU, Boat 4-vCPU, Instabox 4-vCPU, Namespace 4-vCPU, Celesto 4-vCPU and Blacksmith 4-vCPU pilots are enabled alongside GitHub; other paid routes remain disabled. Each paid route still requires one explicit workload and one repetition.
 
 Tenki's prepared label and resources come from its
 [runner quickstart](https://tenki.cloud/docs/runners/quickstart) and

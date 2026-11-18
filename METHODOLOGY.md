@@ -143,7 +143,7 @@ A route is one way of getting a runner:
   and are not scored.
 - **Providers with their own GitHub Actions integration**, using their own
   labels. This measures what a customer gets from that provider directly. The
-  bounded Depot 2-vCPU and 4-vCPU, Boat default (4-vCPU), Instabox 4-vCPU, Namespace 4-vCPU (label `nscloud-ubuntu-24.04-amd64-4x16`) Celesto 4-vCPU (label `celesto-large`) and Blacksmith 4-vCPU (label `blacksmith-4vcpu-ubuntu-2404`) pilots are the currently enabled native integrations. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
+  bounded Depot 2-vCPU and 4-vCPU, Boat default (4-vCPU), Instabox 4-vCPU, Namespace 4-vCPU (label `nscloud-ubuntu-24.04-amd64-4x16`), Celesto 4-vCPU (label `celesto-large`) and Blacksmith 4-vCPU (label `blacksmith-4vcpu-ubuntu-2404`) pilots are the currently enabled native integrations. `ubicloud-hosted-4vcpu` (label `ubicloud-standard-4-ubuntu-2404`) is
   declared in `routes.json` with `"enabled": false`: it is Ubicloud's own hosted
   runner, and it stays out of the dispatch matrix until the Ubicloud GitHub App
   is installed on the organization. Its `settings` object (`premiumCpu`,

@@ -125,12 +125,13 @@ test('a paid Instabox dispatch needs one explicit workload and one repeat', () =
   assert.deepEqual(selectWorkloads(selected, ['node-typescript', 'rust-analyzer'], 'node-typescript', 1), ['node-typescript']);
 });
 
-test('the Namespace and Celesto routes are their own 4 vCPU identities with pinned labels and list prices', () => {
+test('the Namespace, Celesto and Blacksmith routes are their own 4 vCPU identities with pinned labels and list prices', () => {
   const routeFile = JSON.parse(readFileSync(join(root, 'routes.json'), 'utf8')).routes;
   const routes = readRoutes(join(root, 'routes.json'));
   for (const [id, provider, runsOn, price] of [
     ['namespace-hosted-4vcpu', 'namespace', 'nscloud-ubuntu-24.04-amd64-4x16', /\$0\.012 per minute/],
     ['celesto-hosted-4vcpu', 'celesto', 'celesto-large', /\$0\.08 per hour/],
+    ['blacksmith-hosted-4vcpu', 'blacksmith', 'blacksmith-4vcpu-ubuntu-2404', /\$0\.008 per minute/],
   ]) {
     const route = routes.find((r) => r.id === id);
     assert.ok(route, id);
@@ -153,7 +154,7 @@ test('the Namespace and Celesto routes are their own 4 vCPU identities with pinn
 
 test('unqualified hosted routes remain disabled, including the documented Tenki configuration', () => {
   const routes = readRoutes(join(root, 'routes.json'));
-  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'depot-ubuntu-4vcpu', 'boat-4vcpu', 'instabox-4vcpu', 'namespace-hosted-4vcpu', 'celesto-hosted-4vcpu']);
+  assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'depot-ubuntu-4vcpu', 'boat-4vcpu', 'instabox-4vcpu', 'namespace-hosted-4vcpu', 'celesto-hosted-4vcpu', 'blacksmith-hosted-4vcpu']);
   const tenki = routes.find((r) => r.id === 'tenki-hosted-4vcpu');
   assert.equal(tenki.runsOn, 'tenki-standard-medium-4c-8g');
   assert.equal(tenki.vcpu, 4);

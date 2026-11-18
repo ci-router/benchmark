@@ -73,7 +73,7 @@ yourself, fork it (below).
 
 | Path | What it is |
 | --- | --- |
-| `LICENSE`, `LICENSE-RESULTS` | Apache-2.0 for the code, CC-BY-4.0 for results and raw data |
+| `LICENSE`, `LICENSE-RESULTS` | Apache-2.0 for the code, CC BY 4.0 for results and raw data |
 | `METHODOLOGY.md` | Principles, workloads, metrics, scoring, ranking rules, limits |
 | `suite.json` | The suite version and the pinned workloads |
 | `suites/<version>.json` | The workload list of earlier suite versions, so their results can still be scored |
@@ -126,8 +126,21 @@ the default branch, so a pull request from a fork cannot start paid compute.
 - The code in this repository (scripts, workflows, workload definitions and
   tests) is licensed under the [Apache License 2.0](LICENSE).
 - The results and the raw data on the `results` branch are licensed under
-  [Creative Commons Attribution 4.0 International](LICENSE-RESULTS) (CC-BY-4.0).
-  Attribute them to "ci-router benchmark".
+  [Creative Commons Attribution 4.0 International](LICENSE-RESULTS) (CC BY 4.0).
+  This covers everything on that branch: `results/`, `raw/` and `internal/`.
+  `LICENSE-RESULTS` holds the official legal text and is also on the `results` branch.
+
+### How to credit the data
+
+Credit CI Router and link to this repository and to the licence. You can copy this line:
+
+> Data: [CI Router benchmark](https://github.com/ci-router/benchmark) by
+> [CI Router](https://ci-router.com), licensed under
+> [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+If you changed the data, for example by filtering or re-scoring it, say so next to
+the credit. It also helps readers if you name the suite version and the date you read
+the rows, so they can find the same data.
 
 ## Recurring samples
 

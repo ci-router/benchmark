@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { geomean, percentile, score, summarize } from './score.mjs';
+import { geomean, jobTiming, percentile, score as scoreWithTiming, summarize } from './score.mjs';
+
+const score = (rows, opts) => scoreWithTiming(rows, { timingMethod: 'work-v1', ...opts });
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} vs ${b}`);
 
@@ -79,6 +81,37 @@ const opts = (extra = {}) => ({
   ...extra,
 });
 const find = (res, id) => res.routes.find((r) => r.route === id);
+
+test('full-v2 includes wait/setup/final steps with no work fallback and preserves explicit work-v1', () => {
+  const timed = (route, full, work) => W.flatMap((w) => rows(route, w, { work, cost: 0.1 }).map((r) => ({ ...r, jobCompletedAt: new Date(Date.parse(r.jobCreatedAt) + full * 1000).toISOString() })));
+  const data = [...timed('base4', 200, 100), ...timed('fast4', 400, 50), ...timed('base2', 500, 200)];
+  const full = scoreWithTiming(data, opts());
+  assert.equal(full.timingMethod, 'github-job-full-v2');
+  close(find(full, 'fast4').speed, 50);
+  close(find(scoreWithTiming(data, opts({ timingMethod: 'work-v1' })), 'fast4').speed, 200);
+  assert.equal(find(full, 'fast4').cells.w1.work.p50, 50);
+  assert.equal(find(full, 'fast4').cells.w1.duration.p50, 400);
+  assert.equal(find(full, 'fast4').ranked, true);
+  const missing = data.map((r) => r.route === 'fast4' ? { ...r, jobCreatedAt: null } : r);
+  assert.equal(find(scoreWithTiming(missing, opts()), 'fast4').speed, null);
+  assert.equal(find(scoreWithTiming(missing, opts()), 'fast4').ranked, false);
+  const oneMissing = [...data];
+  oneMissing[40] = { ...oneMissing[40], jobStartedAt: null };
+  assert.equal(find(scoreWithTiming(oneMissing, opts()), 'fast4').ranked, false);
+  const missingBaseline = data.map((r, i) => r.route === 'base4' && i !== 0 ? { ...r, jobCreatedAt: null } : r);
+  assert.equal(find(scoreWithTiming(missingBaseline, opts()), 'fast4').ranked, false);
+  const fullOnly = data.map((r) => ({ ...r, workSeconds: null }));
+  assert.equal(find(scoreWithTiming(fullOnly, opts()), 'fast4').ranked, true);
+  assert.throws(() => scoreWithTiming(data, opts({ timingMethod: 'invented' })), /unknown timing method/);
+});
+
+test('full-v2 validates ordered UTC job clocks and does not double-count boot', () => {
+  const r = { jobCreatedAt: '2026-11-10T12:37:50Z', jobStartedAt: '2026-11-10T12:46:33Z', jobCompletedAt: '2026-11-10T12:51:37Z', workSeconds: 285, routerBootSeconds: 900 };
+  assert.deepEqual(jobTiming(r), { full: 827, wait: 523, running: 304 });
+  for (const change of [{ jobCreatedAt: null }, { jobStartedAt: '' }, { jobCreatedAt: '2026-02-30T00:00:00Z' }, { jobCompletedAt: r.jobCreatedAt }, { jobCreatedAt: 0 }]) {
+    assert.deepEqual(jobTiming({ ...r, ...change }), { full: null, wait: null, running: null });
+  }
+});
 
 test('speed, value and score follow the formulas', () => {
   const data = [

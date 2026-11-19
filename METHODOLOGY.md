@@ -250,17 +250,18 @@ leaderboard shows them as separate entries.
   `hereby runtests-parallel --light=false --lint=false` (build and run the compiler's own
   test suite). The tests need no browser, no network and no secrets.
 - Setup uses the network (the Rust installer, npm, git, a Node tarball checked
-  against a pinned SHA-256). That is why it is timed separately and not used
-  for speed.
+  against a pinned SHA-256). It remains separately visible and is included in full job time.
 
 ## Metrics
 
-- **Work time:** the `work` step. Used for speed, because setup mostly measures
-  the network.
+- **Full job time (speed, `github-job-full-v2`):** GitHub job `completed_at - created_at`,
+  including waiting to start, startup on the job's critical path, setup, work and final steps.
+  It starts at job creation, not workflow dispatch, and ends before any post-job VM cleanup.
+- **Work time:** the `work` step, retained as a separate diagnostic and as historical `work-v1`.
 - **Setup time:** published separately. A runner image that already has the
   tools baked in shows its advantage here.
-- **Queue time:** the job's `started_at - created_at`. How long a job waits for
-  a runner.
+- **Wait to start:** the job's `started_at - created_at`. This includes benchmark matrix
+  waiting and is not an isolated provider queue or boot measurement.
 - **Cost:** billed minutes for the whole job, at the provider's rounding, times
   the dated price a customer pays. Each price snapshot records its source URL.
   A router route uses the router's published pay-as-you-go price, never the
@@ -271,8 +272,22 @@ leaderboard shows them as separate entries.
   attempts). A workload's failure is not held against a route if it fails on
   every route in the same suite version and data set.
 
-Speed uses only the `work` step, while cost covers the whole job, because
-customers pay for the whole job. Both are stated next to the results.
+Speed uses the successful-sample median of full job time. Cost retains its separate
+started-to-completed billing window; queue time is not added to the cost estimate.
+Never add a separately recorded router boot duration to full job time.
+
+Some historical benchmark jobs waited behind another matrix job (`max-parallel: 1`),
+while later paid samples selected one workload per dispatch. That observed wait is
+included without subtraction or outlier removal and cannot be attributed to the provider.
+Identical clock boundaries do not make the historical scheduling conditions equivalent.
+Medians describe published successes, not reliability or time to eventual success. Routed
+publication separately requires successful settlement and cleanup; its published rows
+are not all dispatch attempts.
+
+Missing, malformed or reversed job timestamps leave full timing unknown; there is no
+fallback to work, running time or zero. All three ordered UTC job timestamps are required.
+The full timing sample count can differ from the published success count. Raw rows,
+source revisions, route/cache identities and suite versions are unchanged.
 
 Each published cell gives the sample count, p50, p90 and the coefficient of
 variation (standard deviation of the successful samples divided by their mean).
@@ -288,8 +303,8 @@ finished attempts, the sample count, p50, p90, mean and coefficient of
 variation of the work time. A run whose fingerprint has no CPU model is grouped
 as `cpuModel: null`; it is never dropped and never read as 0. `byCpu` is
 published for reading only: `Speed`, `Value`, `Score`, the ranking rules and the
-unstable flag still use the whole cell, so the route is judged on what a
-customer would get, not on the best processor it sometimes has.
+unstable flag use the selected timing method across the whole cell, not a selected CPU;
+`byCpu` stays explicitly work-only.
 
 ## Suite versions
 
@@ -316,7 +331,7 @@ run under. Results are scored per version and never mixed.
 
 Per workload:
 
-- `time ratio = p50 work time / p50 work time of the same-sized baseline`
+- `time ratio = p50 full job time / p50 full job time of the same-sized baseline`
 - `cost ratio = p50 job cost / p50 job cost of the private 2-vCPU baseline`
 
 Per route, using the geometric mean across the workloads of the suite, so one
@@ -340,7 +355,14 @@ Unknown stays unknown:
 - A ratio of zero or less (a price of 0) is not scored, rather than producing an
   infinite Value.
 
-The scoring code is `bench/score.mjs`; its tests show each rule.
+The scoring code is `bench/score.mjs`; its tests show each rule. Its default timing method
+is `github-job-full-v2`, recorded in the output independently of the workload suite.
+`--timing-method work-v1` reproduces historical work-step scores; methods are never mixed
+within a score. `cells.duration` and `unstableCells` follow the selected method;
+`cells.work` and `byCpu` remain work-only diagnostics. Missing full timings on successful
+samples prevent qualified composite ranking; the existing attempt/reliability thresholds remain.
+The public website instead shows descriptive full-time medians and fastest-listed-normalized
+grades, not this scorer's baseline-normalized composite Speed/Value/Score.
 
 ## Ranking rules
 

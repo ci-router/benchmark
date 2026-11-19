@@ -105,7 +105,21 @@ function byCpu(successes) {
     .sort((a, b) => (a.cpuModel === null) - (b.cpuModel === null) || (a.cpuModel ?? '').localeCompare(b.cpuModel ?? ''));
 }
 
-function buildCell(rows) {
+export const TIMING_METHODS = ['work-v1', 'github-job-full-v2'];
+
+export function jobTiming(row) {
+  const times = [row.jobCreatedAt, row.jobStartedAt, row.jobCompletedAt].map((value) => {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(value)) return NaN;
+    const ms = Date.parse(value);
+    return Number.isFinite(ms) && new Date(ms).toISOString() === value.replace(/(?<=:\d{2})Z$/, '.000Z') ? ms : NaN;
+  });
+  const [created, started, completed] = times;
+  return times.every(Number.isFinite) && created <= started && started <= completed
+    ? { full: (completed - created) / 1000, wait: (started - created) / 1000, running: (completed - started) / 1000 }
+    : { full: null, wait: null, running: null };
+}
+
+function buildCell(rows, timingMethod) {
   const attempts = rows.filter((r) => ATTEMPT_CONCLUSIONS.has(r.conclusion));
   const successes = attempts.filter((r) => r.conclusion === 'success');
   const days = new Set();
@@ -123,6 +137,9 @@ function buildCell(rows) {
     days: days.size,
     timeWindows: windows.size,
     work: summarize(successes.map((r) => r.workSeconds).filter((v) => typeof v === 'number')),
+    duration: summarize(successes.map((r) => timingMethod === 'work-v1' ? r.workSeconds : jobTiming(r).full)),
+    wait: summarize(successes.map((r) => jobTiming(r).wait)),
+    running: summarize(successes.map((r) => jobTiming(r).running)),
     byCpu: byCpu(successes),
     setup: summarize(successes.map((r) => r.setupSeconds).filter((v) => typeof v === 'number')),
     restoreSeconds: summarize(successes.map((r) => r.restoreSeconds)),
@@ -143,7 +160,8 @@ function buildCell(rows) {
  * @param {string|null} opts.costBaseline   route id of the cost reference (e.g. the private 2-vCPU run)
  */
 export function score(rows, opts) {
-  const { suite, workloads, routes, timeBaselines = {}, costBaseline = null, cacheMode = 'cold' } = opts;
+  const { suite, workloads, routes, timeBaselines = {}, costBaseline = null, cacheMode = 'cold', timingMethod = 'github-job-full-v2' } = opts;
+  if (!TIMING_METHODS.includes(timingMethod)) throw new Error(`unknown timing method: ${timingMethod}`);
   if (!CACHE_MODES.includes(cacheMode)) throw new Error('cacheMode must be cold or warm');
   const suiteRows = rows.filter((r) => r && typeof r === 'object' && r.suite === suite && cacheModeOf(r) === cacheMode);
   const routeIds = new Set([...routes.map((r) => r.id), ...suiteRows.map((r) => r.route)]);
@@ -153,7 +171,7 @@ export function score(rows, opts) {
   for (const id of routeIds) {
     const byWorkload = new Map();
     for (const w of workloads) {
-      byWorkload.set(w, buildCell(suiteRows.filter((r) => r.route === id && r.workload === w)));
+      byWorkload.set(w, buildCell(suiteRows.filter((r) => r.route === id && r.workload === w), timingMethod));
     }
     cells.set(id, byWorkload);
   }
@@ -179,7 +197,7 @@ export function score(rows, opts) {
     const timeBase = vcpu !== null ? (timeBaselines[vcpu] ?? null) : null;
 
     const timeRatios = workloads.map((w) =>
-      timeBase === null ? null : ratio(byWorkload.get(w).work.p50, cells.get(timeBase)?.get(w).work.p50),
+      timeBase === null ? null : ratio(byWorkload.get(w).duration.p50, cells.get(timeBase)?.get(w).duration.p50),
     );
     const costRatios = workloads.map((w) =>
       costBaseline === null ? null : ratio(byWorkload.get(w).cost.p50, cells.get(costBaseline)?.get(w).cost.p50),
@@ -202,7 +220,10 @@ export function score(rows, opts) {
     const reasons = [];
     for (const w of workloads) {
       const c = byWorkload.get(w);
-      if (c.work.n === 0) reasons.push(`${w}: no successful result`);
+      if (c.duration.n === 0) reasons.push(`${w}: no successful result`);
+      if (timingMethod !== 'work-v1' && c.duration.n < c.finished) reasons.push(`${w}: full timing missing for ${c.finished - c.duration.n} successful samples`);
+      const baseline = timeBase === null ? null : cells.get(timeBase)?.get(w);
+      if (timingMethod !== 'work-v1' && baseline && baseline.duration.n < baseline.finished) reasons.push(`${w}: timing baseline has missing full timings`);
       if (c.attempts < MIN_ATTEMPTS) reasons.push(`${w}: ${c.attempts} attempts, need ${MIN_ATTEMPTS}`);
       if (c.days < MIN_DAYS) reasons.push(`${w}: ${c.days} days, need ${MIN_DAYS}`);
       if (c.timeWindows < MIN_TIME_WINDOWS) reasons.push(`${w}: ${c.timeWindows} times of day, need ${MIN_TIME_WINDOWS}`);
@@ -230,7 +251,7 @@ export function score(rows, opts) {
       speed,
       value,
       score: scoreValue,
-      unstableCells: workloads.filter((w) => byWorkload.get(w).work.unstable),
+      unstableCells: workloads.filter((w) => byWorkload.get(w).duration.unstable),
       ranked: reasons.length === 0,
       rank: null,
       reasons,
@@ -242,7 +263,7 @@ export function score(rows, opts) {
   ranked.forEach((r, i) => {
     r.rank = i > 0 && ranked[i - 1].score === r.score ? ranked[i - 1].rank : i + 1;
   });
-  return { suite, cacheMode, workloads, routes: results };
+  return { suite, cacheMode, timingMethod, workloads, routes: results };
 }
 
 function args(name) {
@@ -297,6 +318,7 @@ function main() {
     timeBaselines,
     costBaseline: args('cost-baseline')[0] ?? null,
     cacheMode: args('cache-mode')[0] ?? 'cold',
+    timingMethod: args('timing-method')[0] ?? 'github-job-full-v2',
   });
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
 }

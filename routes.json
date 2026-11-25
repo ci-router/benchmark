@@ -88,9 +88,10 @@
       "note": "Disabled after run 42802720019 was refused before any work for the Boat plan ('CI on Boat VMs needs the $20/month plan or higher'); superseded by the boat-4vcpu default pilot. No measurement exists for this route and none is authorized. Label boat-small: 2 vCPU, 4 GB (docs.boat.dev/ci.md, read 2026-11-10). Re-enabling needs a fresh owner authorization and price check."
     },
     {
-      "id": "tenki-hosted-4vcpu",
-      "provider": "tenki",
-      "runsOn": "tenki-standard-medium-4c-8g",
+      "id": "luxor-hosted-4vcpu",
+      "formerIds": ["tenki-hosted-4vcpu"],
+      "provider": "luxor",
+      "runsOn": "luxor-ubuntu-medium-4c-8g",
       "vcpu": 4,
       "memoryGb": 8,
       "image": "ubuntu-24.04",
@@ -104,7 +105,7 @@
       "cache": {
         "backend": null
       },
-      "note": "Prepared from tenki.cloud/docs/runners/quickstart and tenki.cloud/docs/runners/x64-runners.md, checked 2026-11-09. The quickstart gives this 4-vCPU/8-GB label; Linux runners default to Ubuntu 24.04. Disabled until the actual repository has runner access, account size eligibility and publication terms are verified, cache/sticky-disk settings recorded, and collection spend is bounded. Sandbox API access is not hosted-runner access. The actual image and resources must be checked against the job fingerprint. Tenki Terms of Service section 4.2(iv) and Acceptable Use Policy section 3 (checked 2026-11-09) require prior written consent covering the intended benchmark and publication; verify that consent before execution. Account setup and runner access are not publication consent."
+      "note": "Prepared from luxor.ai/docs/runners/quickstart and luxor.ai/docs/runners/x64-runners.md, checked 2026-11-09. The quickstart gives this 4-vCPU/8-GB label; Linux runners default to Ubuntu 24.04. Disabled until the actual repository has runner access, account size eligibility and publication terms are verified, cache/sticky-disk settings recorded, and collection spend is bounded. Sandbox API access is not hosted-runner access. The actual image and resources must be checked against the job fingerprint. Luxor Terms of Service section 4.2(iv) and Acceptable Use Policy section 3 (checked 2026-11-09) require prior written consent covering the intended benchmark and publication; verify that consent before execution. Account setup and runner access are not publication consent."
     },
     {
       "id": "instabox-4vcpu",

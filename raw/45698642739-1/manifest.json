@@ -1,0 +1,16 @@
+{
+  "repo": "ci-router/benchmark",
+  "runId": 45698642739,
+  "attempt": 1,
+  "headSha": "96b71dd5c4c83c7fa5a2906c512258c788f43e43",
+  "jobs": [
+    {
+      "jobId": 139502715545,
+      "name": "run github-hosted-4vcpu node-typescript 1",
+      "route": "github-hosted-4vcpu",
+      "archived": true,
+      "bytes": 26148,
+      "sha256": "c3fff2538d8c7fd09cd27570fb6e13227e7d7a7ecd039ee43cf535904e66b066"
+    }
+  ]
+}

@@ -152,13 +152,13 @@ test('the Namespace, Celesto and Blacksmith routes are their own 4 vCPU identiti
   }
 });
 
-test('unqualified hosted routes remain disabled, including the documented Tenki configuration', () => {
+test('unqualified hosted routes remain disabled, including the documented Luxor configuration', () => {
   const routes = readRoutes(join(root, 'routes.json'));
   assert.deepEqual(routes.filter((r) => r.enabled).map((r) => r.id), ['github-hosted-4vcpu', 'depot-ubuntu-2vcpu', 'depot-ubuntu-4vcpu', 'boat-4vcpu', 'instabox-4vcpu', 'namespace-hosted-4vcpu', 'celesto-hosted-4vcpu', 'blacksmith-hosted-4vcpu']);
-  const tenki = routes.find((r) => r.id === 'tenki-hosted-4vcpu');
-  assert.equal(tenki.runsOn, 'tenki-standard-medium-4c-8g');
-  assert.equal(tenki.vcpu, 4);
-  assert.equal(tenki.memoryGb, 8);
+  const luxor = routes.find((r) => r.id === 'luxor-hosted-4vcpu');
+  assert.equal(luxor.runsOn, 'luxor-ubuntu-medium-4c-8g');
+  assert.equal(luxor.vcpu, 4);
+  assert.equal(luxor.memoryGb, 8);
   for (const route of routes.filter((r) => !r.enabled)) {
     assert.throws(() => selectRoutes(routes, route.id), /disabled/);
   }

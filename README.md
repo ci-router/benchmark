@@ -7,7 +7,7 @@ different runners, with the duration, cost and reliability of each one.
 
 **Bounded external collection.** The GitHub-hosted baseline is the default.
 The Depot 2-vCPU and 4-vCPU, Boat 4-vCPU (default), Instabox 4-vCPU, Namespace 4-vCPU, Celesto 4-vCPU and Blacksmith 4-vCPU routes are enabled only for explicit one-workload, one-repeat
-pilot dispatches. Other sizes, Ubicloud and Tenki remain disabled. A prior successful
+pilot dispatches. Other sizes, Ubicloud and Luxor remain disabled. A prior successful
 same-repository Depot run and the installed native App establish the pilot basis;
 the new job still exercises current repository/account admission.
 
@@ -195,15 +195,15 @@ are enabled. Explicit selection stays subject to the route's `enabled` flag.
 Jobs have a 15-minute timeout and at most one matrix job runs at a time.
 The explicit Depot 2-vCPU and 4-vCPU, Boat 4-vCPU, Instabox 4-vCPU, Namespace 4-vCPU, Celesto 4-vCPU and Blacksmith 4-vCPU pilots are enabled alongside GitHub; other paid routes remain disabled. Each paid route still requires one explicit workload and one repetition.
 
-Tenki's prepared label and resources come from its
-[runner quickstart](https://tenki.cloud/docs/runners/quickstart) and
-[Linux runner documentation](https://tenki.cloud/docs/runners/x64-runners), checked
+Luxor's prepared label and resources come from its
+[runner quickstart](https://luxor.ai/docs/runners/quickstart) and
+[Linux runner documentation](https://luxor.ai/docs/runners/x64-runners), checked
 2026-11-09. Sandbox credentials alone do not establish hosted Actions runner access.
-Tenki documents automatic caching; record the actual settings rather than describing
+Luxor documents automatic caching; record the actual settings rather than describing
 all setup work as cold. No provider result is implied by these route declarations.
 
-Tenki's [Terms of Service, section 4.2(iv)](https://tenki.cloud/docs/terms-of-service.md)
-and [Acceptable Use Policy, section 3](https://tenki.cloud/docs/acceptable-use-policy.md),
+Luxor's [Terms of Service, section 4.2(iv)](https://luxor.ai/docs/terms-of-service.md)
+and [Acceptable Use Policy, section 3](https://luxor.ai/docs/acceptable-use-policy.md),
 checked 2026-11-09, require prior written consent for publishing benchmark results
 and for the competing-service uses described there. Obtain and verify consent covering
 the intended benchmark and publication before executing this route. Account setup,

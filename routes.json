@@ -190,6 +190,21 @@
         "backend": null
       },
       "note": "Blacksmith hosted runner (label blacksmith-4vcpu-ubuntu-2404: Ubuntu 24.04 x64, 4 vCPU, 16 GB, 80 GB; booted from GitHub's runner image; docs.blacksmith.sh/blacksmith-runners/overview, read 2026-11-18), through the blacksmith-sh App installation 183472736 on ci-router. Owner-authorized (Sylvain, 2026-11-18) public cold sample collection: one explicit workload and one repetition per dispatch, serial, no retry until success, at least five successes per workload. List price $0.008 per minute for Linux x64 4 vCPU (blacksmith.sh/pricing and docs.blacksmith.sh/blacksmith-runners/flex-scheduling, read 2026-11-18); the 3,000 free 2 vCPU minutes per month are ignored and every job is priced at list. Blacksmith publishes no rounding or minimum rule. Blacksmith may upgrade a runner to the next size at no cost when it has spare capacity, so read each job's fingerprint vcpus. Blacksmith redirects actions/cache to its own co-located cache; cold jobs never call it, and warm mode stays blocked because the backend is unrecorded. Not invoice-checked. Terms of Service (docs.blacksmith.sh/about/terms-of-service, effective 2026-07-20) have no benchmark, comparison or publication clause and no separate acceptable use policy is published; section 3 forbids reverse engineering or attempting to derive source code or trade secrets, security or vulnerability tests, and causing performance degradation; the owner decided publication regardless of terms. No hard billing cutoff is asserted; the 15-minute job timeout is not a billing cap."
+    },
+    {
+      "id": "warpbuild-hosted-4vcpu",
+      "provider": "warpbuild",
+      "runsOn": "warp-ubuntu-2404-x64-4x",
+      "vcpu": 4,
+      "memoryGb": 16,
+      "image": "ubuntu-24.04",
+      "enabled": false,
+      "hostedRunner": true,
+      "settings": {},
+      "cache": {
+        "backend": null
+      },
+      "note": "WarpBuild cloud runner (label warp-ubuntu-2404-x64-4x, alias of warp-ubuntu-latest-x64-4x: Ubuntu 24.04, x86-64, 4 vCPU, 16 GB, 150 GB SSD, $0.008 per minute; docs.warpbuild.com/ci/cloud-runners and warpbuild.com/pricing, read 2026-11-25). Disabled until the owner creates the WarpBuild account, installs its GitHub App on ci-router for this repository only and checks its terms for benchmark publication. Then: public cold sample collection with one explicit workload and one repetition per dispatch, serial, no retry until success, at least five successes per workload. Billing increment not yet confirmed from WarpBuild's docs; the list rate is not an invoice. WarpBuild cache, snapshots and Docker builders are not used."
     }
   ]
 }

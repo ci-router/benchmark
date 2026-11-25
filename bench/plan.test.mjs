@@ -313,3 +313,19 @@ test('every workload with a priming script or cache list has cache paths', () =>
     for (const p of list) assert.ok(!p.startsWith('/') && !p.includes('..'), `${w}: ${p}`);
   }
 });
+
+test('the WarpBuild 4 vCPU route is declared, pinned and disabled until its App is installed', () => {
+  const routes = readRoutes(join(root, 'routes.json'));
+  const route = routes.find((r) => r.id === 'warpbuild-hosted-4vcpu');
+  assert.ok(route);
+  assert.equal(route.provider, 'warpbuild');
+  assert.equal(route.runsOn, 'warp-ubuntu-2404-x64-4x');
+  assert.equal(route.vcpu, 4);
+  assert.equal(route.memoryGb, 16);
+  assert.equal(route.image, 'ubuntu-24.04');
+  assert.equal(route.cacheBackend, null);
+  assert.equal(route.enabled, false);
+  const raw = JSON.parse(readFileSync(join(root, 'routes.json'), 'utf8')).routes.find((r) => r.id === route.id);
+  assert.match(raw.note, /\$0\.008 per minute/);
+  assert.match(raw.note, /read 2026-11-25/);
+});

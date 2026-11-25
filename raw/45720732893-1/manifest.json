@@ -1,0 +1,15 @@
+{
+  "repo": "ci-router/benchmark",
+  "runId": 45720732893,
+  "attempt": 1,
+  "headSha": "96b71dd5c4c83c7fa5a2906c512258c788f43e43",
+  "jobs": [
+    {
+      "jobId": 139578226180,
+      "name": "run celesto-hosted-4vcpu rust-analyzer 1",
+      "route": "celesto-hosted-4vcpu",
+      "archived": false,
+      "reason": "route-not-enabled"
+    }
+  ]
+}

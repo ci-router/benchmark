@@ -313,3 +313,11 @@ test('every workload with a priming script or cache list has cache paths', () =>
     for (const p of list) assert.ok(!p.startsWith('/') && !p.includes('..'), `${w}: ${p}`);
   }
 });
+
+test('the Depot 4 vCPU route records no cache backend, so its cold rows carry the plain identity', () => {
+  const routes = readRoutes(join(root, 'routes.json'));
+  const route = routes.find((r) => r.id === 'depot-ubuntu-4vcpu');
+  assert.equal(route.enabled, true);
+  assert.equal(route.cacheBackend, null);
+  assert.throws(() => assertCacheMode([route], 'warm'), /no recorded cache backend/);
+});

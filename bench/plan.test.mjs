@@ -328,6 +328,8 @@ test('the WarpBuild 4 vCPU route is declared, pinned and disabled until its App 
   const raw = JSON.parse(readFileSync(join(root, 'routes.json'), 'utf8')).routes.find((r) => r.id === route.id);
   assert.match(raw.note, /\$0\.008 per minute/);
   assert.match(raw.note, /read 2026-11-25/);
+});
+
 test('the Depot 4 vCPU route records no cache backend, so its cold rows carry the plain identity', () => {
   const routes = readRoutes(join(root, 'routes.json'));
   const route = routes.find((r) => r.id === 'depot-ubuntu-4vcpu');
